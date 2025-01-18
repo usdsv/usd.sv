@@ -1,0 +1,14 @@
+{
+    "name": "my-dual-intent-demo",
+    "version": "1.0.0",
+    "scripts": {
+      "test": "npx hardhat test",
+      "deploy-factory": "npx hardhat run scripts/1_deployFactory.js --network localhost",
+      "demo": "npx hardhat run scripts/2_demo.js --network localhost"
+    },
+    "devDependencies": {
+      "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+      "hardhat": "^2.12.0"
+    }
+  }
+  
