@@ -1,0 +1,17 @@
+
+---
+
+## How to Deploy the Entire UI
+
+1. **Prerequisites**: Ensure you have Node.js, Yarn or npm, and a domain or hosting service that can run a Next.js app (e.g., Vercel, Netlify, or your own server).
+
+2. **Configure `chainConfig.json`** with the actual chain info. Adjust:
+   - `"chainId": 357` for OP Stack  
+   - `"chainId": 11155111` for Sepolia  
+   - `"rpc": "https://..."` with real endpoints  
+
+3. **Build**:
+
+   ```bash
+   npm run build
+   npm run export

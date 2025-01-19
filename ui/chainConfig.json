@@ -1,0 +1,45 @@
+{
+    "chains": [
+      {
+        "name": "OP Stack Rollup",
+        "chainId": 357,
+        "rpc": "https://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
+        "wss": "wss://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
+        "explorer": "https://explorer-jam-ccw030wxbz.t.conduit.xyz"
+      },
+      {
+        "name": "Ink Sepolia",
+        "chainId": 763373,
+        "rpc": "https://rpc-gel-sepolia.inkonchain.com",
+        "wss": "wss://rpc-gel-sepolia.inkonchain.com",
+        "explorer": "https://explorer-sepolia.inkonchain.com",
+        "docs": "https://blog.kraken.com/product/ink-testnet"
+      },
+      {
+        "name": "Sepolia",
+        "chainId": 11155111,
+        "rpc": "",
+        "wss": "",
+        "explorer": "https://sepolia.etherscan.io/"
+      },
+      {
+        "name": "Production: Ethereum",
+        "chainId": 1,
+        "rpc": "https://mainnet.infura.io/v3/INFURA_KEY",
+        "wss": "wss://mainnet.infura.io/ws/v3/INFURA_KEY",
+        "explorer": "https://etherscan.io"
+      },
+      {
+        "name": "Production: Ink",
+        "chainId": null,
+        "rpc": "https://usdt0.to/",
+        "explorer": "https://usdt0.to/explorer"
+      },
+      {
+        "name": "Production: Worldcoin",
+        "chainId": null,
+        "rpc": "https://world.org/blog/announcements/introducing-world-chain"
+      }
+    ]
+  }
+  
