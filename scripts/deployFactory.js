@@ -5,9 +5,9 @@ async function main() {
 
   console.log("Deploying IntentFactory with signer:", deployer.address);
 
-  // Compile and get a contract factory for "IntentFactory"
+  // Compile and get a contract factory for "IntentFactory", deploy
   const Factory = await hre.ethers.getContractFactory("IntentFactory");
-  const factory = await Factory.deploy(); // Deploy
+  const factory = await Factory.deploy(); 
   await factory.deployed();
 
   console.log("IntentFactory deployed at:", factory.address);

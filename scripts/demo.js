@@ -14,8 +14,6 @@ async function main() {
   await token.mint(user.address, ethers.utils.parseUnits("1000", 18));
 
   // 2) Construct a GaslessCrossChainOrder
-  //    For the sake of the demo, let's say originChainId == 31337 (local Hardhat chain),
-  //    openDeadline = now + 300, fillDeadline = now + 600
   const now = Math.floor(Date.now() / 1000);
   const orderDataType = ethers.utils.keccak256(
     ethers.utils.toUtf8Bytes("BRIDGE_TRANSFER_ORDER")
