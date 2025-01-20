@@ -1,55 +1,38 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.0;
 
-/**
- * @title MockERC20
- * @dev A simple mock ERC20 token for testing. It does not implement
- *      the full ERC20 specification (like approve/transferFrom).
- *      Instead, it has minimal methods needed for local testing.
- */
-contract MockERC20 {
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+// Importing the ERC20 standard from OpenZeppelin
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-    mapping(address => uint256) private _balances;
-    uint256 private _totalSupply;
+// MockERC20 is a simple ERC20 token implementation for testing purposes
+contract MockERC20 is ERC20 {
+	// Constructor function to initialize the token with its name, symbol, and initial supply
+	constructor(
+		string memory _name, // The name of the token
+		string memory _symbol, // The symbol of the token (e.g., "TOKEN")
+		uint256 _initialSupply // The initial supply of tokens to mint
+	) ERC20(_name, _symbol) {
+		// Mint the initial supply to the contract deployer (msg.sender)
+		_mint(msg.sender, _initialSupply);
+	}
 
-    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
-        name = _name;
-        symbol = _symbol;
-        decimals = _decimals;
-    }
+	// Function to mint new tokens
+	// Only the owner or authorized accounts should be able to call this in a real implementation
+	function mint(address to, uint256 amount) external {
+		// Mint new tokens to the specified address
+		_mint(to, amount);
+	}
 
-    /**
-     * @dev Mints `amount` tokens to address `to`.
-     */
-    function mint(address to, uint256 amount) external {
-        _balances[to] += amount;
-        _totalSupply += amount;
-    }
+	// Function to burn tokens from the caller's account
+	function burn(uint256 amount) external {
+		// Burn tokens from the caller's account
+		_burn(msg.sender, amount);
+	}
 
-    /**
-     * @dev Transfers `amount` tokens from msg.sender to `to`.
-     */
-    function transfer(address to, uint256 amount) external returns (bool) {
-        require(_balances[msg.sender] >= amount, "Insufficient balance");
-        _balances[msg.sender] -= amount;
-        _balances[to] += amount;
-        return true;
-    }
-
-    /**
-     * @dev Returns the balance of `account`.
-     */
-    function balanceOf(address account) external view returns (uint256) {
-        return _balances[account];
-    }
-
-    /**
-     * @dev Returns the total supply.
-     */
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
-    }
+	// Function to burn tokens from a specified address
+	// Only the owner or authorized accounts should be able to call this in a real implementation
+	function burnFrom(address account, uint256 amount) external {
+		// Burn tokens from a specified account
+		_burn(account, amount);
+	}
 }
