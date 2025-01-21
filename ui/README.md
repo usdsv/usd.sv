@@ -8,6 +8,7 @@ This is a **demo** React + Next.js UI flow that shows how a user can:
 4. **View** the bridged tokens on the destination chain.
 
 > **Note**: This is a simplified sample. In a real setup, you'd integrate:
+>
 > - On-chain factories,
 > - Real bridging (SP1 proofs, finality checks),
 > - A filler or aggregator service that calls `IntentFactory.createIntent(...)`,
@@ -38,12 +39,14 @@ This is a **demo** React + Next.js UI flow that shows how a user can:
    git clone https://github.com/your-username/my-intent-bridge-ui.git
    cd my-intent-bridge-ui
 
+   ```
 
 2. Install dependencies:
 
 ```bash
 npm install
 ```
+
 or
 
 ```bash
@@ -57,6 +60,7 @@ yarn
 ```bash
 npm run dev
 ```
+
 or
 
 ```bash
@@ -73,8 +77,10 @@ To create an optimized production build:
 npm run build
 npm run start
 ```
+
 (Or the equivalent Yarn commands.)
 
 ## Outstanding Items
+
 1. Demonstrate the above in vercel with Metamask Wallet Integration: The code uses a simple window.ethereum approach. Consider using wagmi or RainbowKit for robust wallet management.
 2. Security & Validation: Proper checks (signatures, deadlines, reverts) are partially mocked.
