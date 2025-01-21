@@ -8,9 +8,8 @@ async function main() {
   // Compile and get a contract factory for "IntentFactory", deploy
   const Factory = await hre.ethers.getContractFactory("IntentFactory");
   const factory = await Factory.deploy(); 
-  await factory.deployed();
 
-  console.log("IntentFactory deployed at:", factory.address);
+  console.log("IntentFactory deployed at:", await factory.getAddress());
 }
 
 main().catch((error) => {

@@ -43,7 +43,7 @@ contract DualChainIntent is IDestinationSettler {
 
 	// Address of the SP1 Groth16 verifier contract
 	address public SP1VERIFIER_ADDRESS =
-		0x397A5f7f3dBd538f23DE225B51f532c34448dA9B;
+		0x78e7F7896C65B09EE109d8302d1aB3aBc17A477C;
 
 	// State variables
 	GaslessCrossChainOrder public order; // The current order

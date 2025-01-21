@@ -4,6 +4,8 @@ pragma solidity ^0.8.20;
 import { IGroth16Verifier } from "./interfaces/IGroth16Verifier.sol";
 import { Groth16Verifier } from "./Groth16Verifier.sol";
 
+import "hardhat/console.sol";
+
 /// @title SP1 Verifier
 /// @author Succinct Labs
 /// @notice This contracts implements a solidity verifier for SP1.
@@ -18,11 +20,11 @@ contract SP1Groth16Verifier is Groth16Verifier, IGroth16Verifier {
 	error InvalidProof();
 
 	function VERSION() external pure returns (string memory) {
-		return "v4.0.0-rc.3";
+		return "v5.0.0";
 	}
 
 	function VERIFIER_HASH() public pure returns (bytes32) {
-		return 0x11b6a09d63d255ad425ee3a7f6211d5ec63fbde9805b40551c3136275b6f4eb4;
+		return 0x9f8c5982a2e3c4e188738b98b2d0c33b84d963d4e2974f613ad0d6203fdf75b3;
 	}
 
 	/// @notice Hashes the public values to a field elements inside Bn254.
@@ -48,12 +50,30 @@ contract SP1Groth16Verifier is Groth16Verifier, IGroth16Verifier {
 			revert WrongVerifierSelector(receivedSelector, expectedSelector);
 		}
 
-		bytes32 publicValuesDigest = hashPublicValues(publicValues);
-		uint256[2] memory inputs;
-		inputs[0] = uint256(programVKey);
-		inputs[1] = uint256(publicValuesDigest);
-		uint256[8] memory proof = abi.decode(proofBytes[4:], (uint256[8]));
-		this.Verify(proof, inputs);
+		// bytes32 publicValuesDigest = hashPublicValues(publicValues);
+		uint256[2] memory inputs = abi.decode(publicValues, (uint256[2]));
+		// inputs[0] = uint256(programVKey);
+		// inputs[1] = uint256(publicValuesDigest);
+		(
+			uint256[2] memory pA,
+			uint256[2][2] memory pB,
+			uint256[2] memory pC
+		) = abi.decode(proofBytes[4:], (uint256[2], uint256[2][2], uint256[2]));
+
+		// console.logUint(pA[0]);
+
+		// console.logUint(pB[0][0]);
+		// console.logUint(pB[0][1]);
+		// console.logUint(pB[1][0]);
+		// console.logUint(pB[1][1]);
+
+		// console.logUint(pC[0]);
+		// console.logUint(pC[1]);
+
+		// console.logUint(inputs[0]);
+		// console.logUint(inputs[1]);
+		// this.Verify(proof, inputs);
+		require(this.verifyProof(pA, pB, pC, inputs), "invalid proof");
 
 		return true;
 	}
