@@ -65,7 +65,7 @@ describe("Logic Work Flow Testing (ERC-7686 and ZK Proof of Finality)", () => {
 		bridgeData = ethers.AbiCoder.defaultAbiCoder().encode(
 			["address", "address", "uint256", "uint256", "address", "address"], // Specify the types
 			[
-				ethers.ZeroAddress, // Placeholder for intent address
+				ethers.ZeroAddress, // Placeholder for filler address
 				await sourceToken.getAddress(), // Source token address
 				BRIDGE_AMOUNT, // Amount to bridge
 				chainId, // Chain ID

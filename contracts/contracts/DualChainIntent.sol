@@ -43,7 +43,7 @@ contract DualChainIntent is IDestinationSettler {
 
 	// Address of the SP1 Groth16 verifier contract
 	address public SP1VERIFIER_ADDRESS =
-		0x78e7F7896C65B09EE109d8302d1aB3aBc17A477C;
+		0x4660483e004e416D41bfd77D6425e98543beB6Ba;
 
 	// State variables
 	GaslessCrossChainOrder public order; // The current order
@@ -127,14 +127,14 @@ contract DualChainIntent is IDestinationSettler {
 		emit Open(generateOrderId(order), _filler);
 	}
 
-	/**
-	 * @dev Sets the verifier address for testing purposes.
-	 *
-	 * @param _verifier The address of the new verifier.
-	 */
-	function setVerifier(address _verifier) external {
-		SP1VERIFIER_ADDRESS = _verifier;
-	}
+	// /**
+	//  * @dev Sets the verifier address for testing purposes.
+	//  *
+	//  * @param _verifier The address of the new verifier.
+	//  */
+	// function setVerifier(address _verifier) external {
+	// 	SP1VERIFIER_ADDRESS = _verifier;
+	// }
 
 	/**
 	 * @dev Fulfills the bridge transfer on the destination chain.
