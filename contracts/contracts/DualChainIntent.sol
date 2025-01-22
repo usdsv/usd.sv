@@ -127,14 +127,14 @@ contract DualChainIntent is IDestinationSettler {
 		emit Open(generateOrderId(order), _filler);
 	}
 
-	// /**
-	//  * @dev Sets the verifier address for testing purposes.
-	//  *
-	//  * @param _verifier The address of the new verifier.
-	//  */
-	// function setVerifier(address _verifier) external {
-	// 	SP1VERIFIER_ADDRESS = _verifier;
-	// }
+	/**
+	 * @dev Sets the verifier address for testing purposes.
+	 *
+	 * @param _verifier The address of the new verifier.
+	 */
+	function setVerifier(address _verifier) external {
+		SP1VERIFIER_ADDRESS = _verifier;
+	}
 
 	/**
 	 * @dev Fulfills the bridge transfer on the destination chain.

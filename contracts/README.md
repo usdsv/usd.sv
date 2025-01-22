@@ -55,7 +55,7 @@
 ## Sepolia -> Ink Sepolia
 
 ```
-100 MOCK on Sepolia to Op Stack Roll up
+100 MOCK on Sepolia to Ink Sepolia
 order: {
     intentAddress: '0x0000000000000000000000000000000000000000',
     user: '0x07540105a6C4582bC036c87125718861150E4F3A',
