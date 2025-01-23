@@ -53,9 +53,10 @@ contract DualChainIntent is IDestinationSettler {
 	bool public destinationFulfilled; // Indicates if the destination has been fulfilled
 	bool public originCompleted; // Indicates if the origin process is completed
 
-	// Event emitted when an order is opened and fullfilled
+	// Event emitted when an order is opened and fullfilled, withdrawn
 	event Open(bytes32 indexed orderId, address filler);
 	event Completed(bytes32 indexed orderId);
+	event Withdraw(bytes32 indexed orderId);
 
 	/**
 	 * @dev Constructor to initialize the DualChainIntent contract with a user order
@@ -79,10 +80,18 @@ contract DualChainIntent is IDestinationSettler {
 			"Invalid orderDataType"
 		);
 
+		// Check current timestamp and choose what to do
+		if (block.timestamp <= _order.openDeadline) {
+			// the filler action for fill
+		} else if (block.timestamp >= (_order.fillDeadline + 300)) {
+			// the user action for withdraw
+		}
+
 		// Check that the order has not expired based on the openDeadline
 		require(
-			block.timestamp <= _order.openDeadline,
-			"Order expired (openDeadline)"
+			(block.timestamp <= _order.openDeadline) ||
+				(block.timestamp >= (_order.fillDeadline + 300)),
+			"Order can't be opened due to deadline"
 		);
 
 		// Decode the order data into individual components
@@ -114,9 +123,17 @@ contract DualChainIntent is IDestinationSettler {
 	 *
 	 * @param _filler The address of the filler.
 	 *
+	 * @notice This function must be called at once after the constructor
+	 *
+	 * Requirements:
+	 * - Bridgedata.filler must be zero, not initialized
+	 *
 	 * Emits an Open event upon successful initialization.
 	 */
 	function initializeFiller(address _filler) public {
+		// Verify that the filler is not initialized
+		require(bridgeData.filler == address(0), "Filler already initialized");
+
 		// Set the filler address in the bridge transfer data
 		bridgeData.filler = _filler;
 
@@ -235,6 +252,50 @@ contract DualChainIntent is IDestinationSettler {
 
 		// Generate and emit the order ID for the completed transfer
 		emit Completed(generateOrderId(order));
+	}
+
+	/**
+	 * @dev Finalizes the order with withdrawn by user on the origin chain due to no filler.
+	 *
+	 * @param orderId The ID of the order being withdrawn from the origin chain.
+	 *
+	 * Requirements:
+	 * - The chain ID must match the source chain ID.
+	 * - The order ID must match the generated orderId.
+	 * - The msg.sender must match the order.user.
+	 * - The order must not be fulfilled.
+	 * - The current timestamp must be greater than or equal to the fillDeadline and 5 minutes.
+	 */
+	function withdraw(bytes32 orderId) external {
+		// Ensure the transaction is occurring on the correct origin chain
+		require(block.chainid == order.sourceChainId, "Not origin chain");
+
+		// Verify that the provided orderId matches the current order's ID
+		require(orderId == generateOrderId(order), "Invalid order");
+
+		// Veify that only user can call this function
+		require(msg.sender == order.user, "Only user can call this function");
+
+		// Verify that the order is not Fulfilled
+		require(
+			destinationFulfilled == false,
+			"Order already fulfilled by filler"
+		);
+
+		// Verify that the order is expired base on the fillDeadline
+		require(
+			block.timestamp >= (order.fillDeadline + 300),
+			"Can withdraw after 5 minutes from the fillDeadline"
+		);
+
+		// Transfer tokens back to the user
+		IERC20(bridgeData.sourceToken).safeTransfer(
+			order.user,
+			bridgeData.amount
+		);
+
+		// Emit the withdraw event that the user has withdrawn tokens back
+		emit Withdraw(orderId);
 	}
 
 	/**

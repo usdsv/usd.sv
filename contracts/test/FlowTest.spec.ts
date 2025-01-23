@@ -118,7 +118,7 @@ describe("Logic Work Flow Testing (ERC-7686 and ZK Proof of Finality)", () => {
 		signature = await alice.signMessage(orderMessage)
 	})
 
-	it("Alice transfers tokens to ephemeral address", async () => {
+	it("Alice transfers tokens to ephemeral address using ERC20Permit", async () => {
 		// Get the computed address for the ephemeral contract
 		computedAddress = await intentFactory.connect(alice).getIntentAddress(order, ethers.id(salt))
 		console.log("Ephemeral Contract will be deployed to:", computedAddress) // Log the computed address

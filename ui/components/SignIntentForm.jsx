@@ -7,6 +7,10 @@ import { useRouter } from "next/navigation";
 import { useAccount, useSignMessage } from "wagmi";
 import { Box, Typography, TextField, Button, Alert } from "@mui/material";
 
+import { ethers } from "ethers";
+
+import { ADDRESS_MOCT_USDT } from "@/contracts/constants";
+
 const SignIntentForm = ({
   signature,
   onSign,
@@ -16,6 +20,7 @@ const SignIntentForm = ({
   _setEphemeralAddress,
 }) => {
   const [chainId, setChainId] = useState("");
+  const [destChainId, setDestChainId] = useState("");
   const [nonce, setNonce] = useState("");
   const [tokenAddress, setTokenAddress] = useState("");
   const [amount, setAmount] = useState("");
@@ -97,12 +102,13 @@ const SignIntentForm = ({
     }
 
     const parsedChainId = parseInt(chainId, 10);
+    const parsedDestChainId = parseInt(destChainId, 10);
     const parsedNonce = parseInt(nonce, 10);
     const parsedDeadline = parseInt(deadline, 10);
     const parsedAmount = Number(amount);
 
     if (isNaN(parsedChainId) || parsedChainId <= 0) {
-      setFormError("Origin Chain ID must be a positive integer.");
+      setFormError("Source Chain ID must be a positive integer.");
       return;
     }
 
@@ -131,27 +137,60 @@ const SignIntentForm = ({
       return;
     }
 
+    const currentTimeStamp = Math.floor(Date.now() / 1000);
+
+    // user signes GasslessCrossChainOrder
+    const bridgeData = ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address", "address", "uint256", "uint256", "address", "address"],
+      [
+        "0x0000000000000000000000000000000000000000",
+        ADDRESS_MOCT_USDT,
+        amount,
+        parsedDestChainId,
+        ADDRESS_MOCT_USDT,
+        address,
+      ]
+    );
+
     const order = {
+      intentAddress: "0x0000000000000000000000000000000000000000",
       user: address,
-      originChainId: parsedChainId,
       nonce: parsedNonce,
-      fillDeadline: parsedDeadline,
+      sourceChainId: parsedChainId,
+      openDeadline: currentTimeStamp + 3600, // calculate manually
+      fillDeadline: currentTimeStamp + 7200, // calculate manually
       orderDataType: keccak256(toUtf8Bytes("BRIDGE_TRANSFER_ORDER")),
-      orderData: {
-        token: tokenAddress,
-        amount: amount,
-      },
+      orderData: bridgeData,
     };
 
-    const orderHash = keccak256(toUtf8Bytes(JSON.stringify(order)));
-    console.log("orderHash:", orderHash);
+    const orderMessage = ethers.AbiCoder.defaultAbiCoder().encode(
+      [
+        "address",
+        "address",
+        "uint256",
+        "uint256",
+        "uint32",
+        "uint32",
+        "bytes32",
+        "bytes",
+      ], // Specify the types
+      [
+        order.intentAddress, // Intent address
+        order.user, // User address
+        order.nonce, // Nonce
+        order.sourceChainId, // Source chain ID
+        order.openDeadline, // Open deadline
+        order.fillDeadline, // Fill deadline
+        order.orderDataType, // Order data type
+        order.orderData, // Order data
+      ]
+    );
+
+    console.log("Order message: " + orderMessage);
 
     reset();
     try {
-      const ephemeralAddress = "0xEphemeral1234";
-      _setEphemeralAddress(ephemeralAddress);
-
-      await signMessage({ message: orderHash });
+      await signMessage({ message: orderMessage });
     } catch (err) {
       console.error("Signing error:", err);
       setFormError(`Error signing the order: ${err.message || err}`);
@@ -163,15 +202,17 @@ const SignIntentForm = ({
 
   // Fill in defaults
   const handleFillDefaults = () => {
-    setChainId("31337");
+    setChainId("11155111");
+    setDestChainId("357");
     setNonce("1234");
-    setTokenAddress("0x1234567890abcdef1234567890abcdef12345678");
+    setTokenAddress("0x52247fe50A1c11773B182Afd1Dda181de705289c");
     setAmount("100");
     setDeadline("1699999999");
   };
 
   const handleResetInputs = () => {
     setChainId("");
+    setDestChainId("");
     setNonce("");
     setTokenAddress("");
     setAmount("");
@@ -253,10 +294,20 @@ const SignIntentForm = ({
           {/* Fields with type="number" */}
           <TextField
             type="number"
-            label="Origin Chain ID"
+            label="Source Chain ID"
             value={chainId}
             onChange={(e) => setChainId(e.target.value)}
-            placeholder="e.g. 31337"
+            placeholder="e.g. 11155111"
+            fullWidth
+            margin="normal"
+            disabled={signedData}
+          />
+          <TextField
+            type="number"
+            label="Destination Chain ID"
+            value={destChainId}
+            onChange={(e) => setDestChainId(e.target.value)}
+            placeholder="e.g. 357"
             fullWidth
             margin="normal"
             disabled={signedData}
