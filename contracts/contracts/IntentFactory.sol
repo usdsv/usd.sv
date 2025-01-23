@@ -46,10 +46,8 @@ contract IntentFactory {
 		// Ensure the contract was created successfully
 		require(intentAddr != address(0), "CREATE2 failed");
 
-		if (block.timestamp <= _order.openDeadline) {
-			// Initialize the newly created intent with the sender's address and order
-			DualChainIntent(intentAddr).initializeFiller(msg.sender);
-		}
+		// Initialize the newly created intent with the sender's address and order
+		DualChainIntent(intentAddr).initializeFiller(msg.sender);
 
 		// Emit the IntentDeployed event
 		emit IntentDeployed(intentAddr, _order);

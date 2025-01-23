@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IGroth16Verifier } from "./interfaces/IGroth16Verifier.sol";
+import { MockERC20 } from "./MockERC20.sol";
 
 // Struct representing a GaslessCrossChainOrder (user signs the off-chain order with some values)
 struct GaslessCrossChainOrder {
@@ -43,7 +44,7 @@ contract DualChainIntent is IDestinationSettler {
 
 	// Address of the SP1 Groth16 verifier contract
 	address public SP1VERIFIER_ADDRESS =
-		0x4660483e004e416D41bfd77D6425e98543beB6Ba;
+		0x397A5f7f3dBd538f23DE225B51f532c34448dA9B;
 
 	// State variables
 	GaslessCrossChainOrder public order; // The current order
@@ -80,18 +81,10 @@ contract DualChainIntent is IDestinationSettler {
 			"Invalid orderDataType"
 		);
 
-		// Check current timestamp and choose what to do
-		if (block.timestamp <= _order.openDeadline) {
-			// the filler action for fill
-		} else if (block.timestamp >= (_order.fillDeadline + 300)) {
-			// the user action for withdraw
-		}
-
 		// Check that the order has not expired based on the openDeadline
 		require(
-			(block.timestamp <= _order.openDeadline) ||
-				(block.timestamp >= (_order.fillDeadline + 300)),
-			"Order can't be opened due to deadline"
+			(block.timestamp <= _order.openDeadline),
+			"Order open deadline expeired"
 		);
 
 		// Decode the order data into individual components
@@ -154,6 +147,60 @@ contract DualChainIntent is IDestinationSettler {
 	// }
 
 	/**
+	 * @dev Permit the ephemeral contract to spend token behalf of the user and send tokens.
+	 *
+	 * @param orderId The ID of the order being fulfilled.
+	 * @param v The v parameter of user signature
+	 * @param r The r parameter of user signature
+	 * @param s The s parameter of user signature
+	 *
+	 * Requirements:
+	 * - The provided orderId must match the hashed order.
+	 * - The transaction must be on the source chain.
+	 * - The caller must be the designated filler.
+	 * - The current timestamp must be less than or equal to the fillDeadline.
+	 */
+	function submitPermit(
+		bytes32 orderId,
+		uint8 v,
+		bytes32 r,
+		bytes32 s
+	) external {
+		// Verify that the provided orderId matches the current order's ID
+		require(orderId == generateOrderId(order), "Invalid orderId");
+
+		// Ensure the transaction is occurring on the correct source chain
+		require(block.chainid == order.sourceChainId, "Not source chain");
+
+		// Confirm that the caller is the designated filler for this transfer
+		require(msg.sender == bridgeData.filler, "Only filler can submit permit");
+
+		// Verify that the order has not expired
+		require(
+			block.timestamp <= order.fillDeadline,
+			"Order expired (fillDeadline)"
+		);
+
+		// Submit permit that ephemeral contract to spend tokens behalf of the user
+		MockERC20(bridgeData.sourceToken).permit(
+			order.user,
+			order.intentAddress,
+			bridgeData.amount,
+			order.fillDeadline,
+			v,
+			r,
+			s
+		);
+
+		// Transfer token from user to ephemeral contract
+		IERC20(bridgeData.sourceToken).transferFrom(
+			order.user,
+			order.intentAddress,
+			bridgeData.amount
+		);
+	}
+
+	/**
 	 * @dev Fulfills the bridge transfer on the destination chain.
 	 *
 	 * @param orderId The ID of the order being fulfilled.
@@ -165,6 +212,7 @@ contract DualChainIntent is IDestinationSettler {
 	 * - The transaction must be on the destination chain.
 	 * - The transfer must not have been fulfilled already.
 	 * - The caller must be the designated filler.
+	 * - The current timestamp must be less than or equal to the fillDeadline.
 	 */
 	function fill(
 		bytes32 orderId,
@@ -187,6 +235,12 @@ contract DualChainIntent is IDestinationSettler {
 		require(
 			msg.sender == bridgeData.filler,
 			"Only filler can finalize destination"
+		);
+
+		// Verify that the order has not expired
+		require(
+			block.timestamp <= order.fillDeadline,
+			"Order expired (fillDeadline)"
 		);
 
 		// Mark the destination as fulfilled
@@ -277,10 +331,7 @@ contract DualChainIntent is IDestinationSettler {
 		require(msg.sender == order.user, "Only user can call this function");
 
 		// Verify that the order is not Fulfilled
-		require(
-			destinationFulfilled == false,
-			"Order already fulfilled by filler"
-		);
+		require(!destinationFulfilled, "Order already fulfilled by filler");
 
 		// Verify that the order is expired base on the fillDeadline
 		require(

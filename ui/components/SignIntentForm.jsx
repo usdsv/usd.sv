@@ -186,11 +186,9 @@ const SignIntentForm = ({
       ]
     );
 
-    console.log("Order message: " + orderMessage);
-
     reset();
     try {
-      await signMessage({ message: orderMessage });
+      signMessage({ message: orderMessage });
     } catch (err) {
       console.error("Signing error:", err);
       setFormError(`Error signing the order: ${err.message || err}`);
