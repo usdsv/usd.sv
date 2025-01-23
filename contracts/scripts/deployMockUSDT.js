@@ -7,7 +7,7 @@ async function main() {
 
   // Compile and get a contract factory for "IntentFactory", deploy
   const Factory = await hre.ethers.getContractFactory("MockERC20");
-  const factory = await Factory.deploy(...["Tether USD","USDT","10000000000000000000000"]); 
+  const factory = await Factory.deploy(...["Wrapped Bitcoin", "WBTC", "10000000000000000000000"]);
 
   console.log("MockUSDT deployed at:", await factory.getAddress());
 }

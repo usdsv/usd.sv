@@ -4,7 +4,7 @@ import { Box, Typography } from "@mui/material";
 const StepIndicator = ({ currentStep }) => {
   const steps = [
     "Sign Intent",
-    "Transfer Funds",
+    "Sign Permit",
     "Observe Deployments",
     "View Destination",
   ];

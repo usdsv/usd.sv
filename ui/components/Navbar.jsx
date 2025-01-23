@@ -74,7 +74,7 @@ const Navbar = () => {
 
         {/* Right Section */}
         <Box sx={{ ml: "auto" }}>
-          <ConnectButton />
+          <ConnectButton chainStatus="icon" />
         </Box>
       </Toolbar>
     </AppBar>
