@@ -24,6 +24,7 @@ import {
 import { SALT } from "@/config/constants";
 import { abis } from "@/abi";
 import { getContractAddress } from "@/config/networks";
+import { estimateContractGas } from "viem/actions";
 
 const SignPermitForm = ({
   intentOrder,
@@ -33,6 +34,7 @@ const SignPermitForm = ({
   amount,
   chainId,
   destChainId,
+  fillDeadline,
   _setPermitData,
   _setSignature,
 }) => {
@@ -226,7 +228,7 @@ const SignPermitForm = ({
       spender: ephemeralAddress,
       value: ethers.parseEther(amount),
       nonce: sourceTokenNonce,
-      deadline: 1800000000,
+      deadline: fillDeadline,
     };
 
     _setPermitData(permitValues);

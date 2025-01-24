@@ -26,6 +26,7 @@ const SignerPage = () => {
   const [amount, setAmount] = useState(null);
   const [chainId, setChainId] = useState(null);
   const [destChainId, setDestChainId] = useState(null);
+  const [fillDeadline, setFillDeadline] = useState(null);
 
   // Called by SignIntentForm after successful signing
   const handleSign = (sig, formData) => {
@@ -122,6 +123,7 @@ const SignerPage = () => {
         _setChainId={setChainId}
         _setDestChainId={setDestChainId}
         _setUserAddress={setUserAddress}
+        _setFillDeadline={setFillDeadline}
       />
     </>
   );
@@ -138,6 +140,7 @@ const SignerPage = () => {
         amount={amount}
         chainId={chainId}
         destChainId={destChainId}
+        fillDeadline={fillDeadline}
         _setPermitData={setPermitData}
         _setSignature={setPermitSignature}
       />

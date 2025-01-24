@@ -22,6 +22,7 @@ const SignIntentForm = ({
   _setEphemeralAddress,
   _setUserAddress,
   _setIntentOrder,
+  _setFillDeadline,
 }) => {
   const [chainId, setChainId] = useState("");
   const [destChainId, setDestChainId] = useState("");
@@ -92,7 +93,7 @@ const SignIntentForm = ({
           _setChainId(chainId);
           _setDestChainId(destChainId);
           _setUserAddress(address);
-
+          -_setFillDeadline(fillDeadline);
           _setIntentOrder({ ...intentOrder, intentAddress: computedAddress });
 
           setRecoveredAddress(recoveredAddr);
@@ -183,8 +184,8 @@ const SignIntentForm = ({
       user: address,
       nonce: parsedNonce,
       sourceChainId: parsedChainId,
-      openDeadline: 1800000000, // calculate manually
-      fillDeadline: 1800000000, // calculate manually
+      openDeadline: parsedOpenDeadline, // calculate manually
+      fillDeadline: parsedFillDeadline, // calculate manually
       orderDataType: keccak256(toUtf8Bytes("BRIDGE_TRANSFER_ORDER")),
       orderData: bridgeData,
     };
