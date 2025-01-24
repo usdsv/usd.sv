@@ -172,6 +172,7 @@ const SignPermitForm = ({
             signature: permitSignedData,
           });
 
+          console.log("PermitSign: ", ethers.Signature.from(permitSignedData));
           setRecoveredAddress(recoveredAddr);
         } catch (err) {
           console.error("Error recovering address:", err);
@@ -225,10 +226,12 @@ const SignPermitForm = ({
       spender: ephemeralAddress,
       value: ethers.parseEther(amount),
       nonce: sourceTokenNonce,
-      deadline: currentTimeStamp + 3600 * 1,
+      deadline: 1800000000,
     };
 
     _setPermitData(permitValues);
+
+    console.log("PermitValues: ", permitValues);
 
     try {
       signPermit({

@@ -183,13 +183,14 @@ const SignIntentForm = ({
       user: address,
       nonce: parsedNonce,
       sourceChainId: parsedChainId,
-      openDeadline: openDeadline, // calculate manually
-      fillDeadline: fillDeadline, // calculate manually
+      openDeadline: 1800000000, // calculate manually
+      fillDeadline: 1800000000, // calculate manually
       orderDataType: keccak256(toUtf8Bytes("BRIDGE_TRANSFER_ORDER")),
       orderData: bridgeData,
     };
 
     setIntentOrder(order);
+    console.log("Order: ", order);
 
     orderReset();
     try {
@@ -380,7 +381,7 @@ const SignIntentForm = ({
             type="number"
             label="Open Deadline"
             value={openDeadline}
-            onChange={(e) => setDeadline(e.target.value)}
+            onChange={(e) => setOpenDeadline(e.target.value)}
             placeholder="Unix timestamp, e.g. 1699999999"
             fullWidth
             margin="normal"
@@ -390,7 +391,7 @@ const SignIntentForm = ({
             type="number"
             label="Fill Deadline"
             value={fillDeadline}
-            onChange={(e) => setDeadline(e.target.value)}
+            onChange={(e) => setFillDeadline(e.target.value)}
             placeholder="Unix timestamp, e.g. 1699999999"
             fullWidth
             margin="normal"

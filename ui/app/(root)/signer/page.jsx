@@ -105,7 +105,7 @@ const SignerPage = () => {
 
   useEffect(() => {
     setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
-  });
+  }, [isOrderSigned, isPermitSigned]);
 
   const intentSignForm = (
     <>
@@ -148,7 +148,12 @@ const SignerPage = () => {
       <Typography variant="h4" sx={{ fontWeight: "bold" }}>
         Deployment Watcher
       </Typography>
-      <DeploymentWatcher />
+      <DeploymentWatcher
+        sourceChainId={chainId}
+        destChainId={destChainId}
+        ephemeralAddress={ephemeralAddress}
+        tokenAmount={amount}
+      />
     </>
   );
 

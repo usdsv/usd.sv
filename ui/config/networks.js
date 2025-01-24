@@ -19,7 +19,7 @@ const knownNetworks = {
     chainId: 763373,
     rpc: "https://rpc-gel-sepolia.inkonchain.com",
     wss: "wss://rpc-gel-sepolia.inkonchain.com",
-    explorer: "https://explorer-sepolia.inkonchain.com",
+    explorer: "https://explorer-sepolia.inkonchain.com/",
     docs: "https://blog.kraken.com/product/ink-testnet",
   },
   [networkIds.opstack]: {
@@ -27,7 +27,7 @@ const knownNetworks = {
     chainId: 357,
     rpc: "https://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
     wss: "wss://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
-    explorer: "https://explorer-jam-ccw030wxbz.t.conduit.xyz",
+    explorer: "https://explorer-jam-ccw030wxbz.t.conduit.xyz/",
   },
 };
 
@@ -37,6 +37,10 @@ const knownContracts = {
     [networkIds.ink]: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
     [networkIds.opstack]: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
   },
+};
+
+export const ExplorerLink = (chainId) => {
+  return knownNetworks[chainId].explorer;
 };
 
 export const getContractAddress = (chainId, name) => {
