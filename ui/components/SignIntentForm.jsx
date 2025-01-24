@@ -2,81 +2,107 @@
 
 import React, { useState, useEffect } from "react";
 import { keccak256, toUtf8Bytes } from "ethers";
-import { recoverMessageAddress } from "viem";
+import { recoverTypedDataAddress } from "viem";
 import { useRouter } from "next/navigation";
-import { useAccount, useSignMessage } from "wagmi";
+import { useAccount, useSignTypedData, useReadContract } from "wagmi";
 import { Box, Typography, TextField, Button, Alert } from "@mui/material";
+import { ethers } from "ethers";
+
+import { SALT } from "@/config/constants";
+import { abis } from "@/abi";
+import { getContractAddress, getToken, tokenIds } from "@/config/networks";
 
 const SignIntentForm = ({
-  signature,
   onSign,
   setSignature,
   _setTokenAddress,
   _setAmount,
+  _setChainId,
+  _setDestChainId,
   _setEphemeralAddress,
+  _setUserAddress,
+  _setIntentOrder,
+  _setFillDeadline,
 }) => {
   const [chainId, setChainId] = useState("");
+  const [destChainId, setDestChainId] = useState("");
   const [nonce, setNonce] = useState("");
   const [tokenAddress, setTokenAddress] = useState("");
   const [amount, setAmount] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [openDeadline, setOpenDeadline] = useState("");
+  const [fillDeadline, setFillDeadline] = useState("");
   const [recoveredAddress, setRecoveredAddress] = useState("");
   const [ephemeralAddress, setEphemeralAddress] = useState("");
   const [formError, setFormError] = useState("");
+
+  const [intentOrder, setIntentOrder] = useState(null);
 
   const { isConnected, address } = useAccount();
   const router = useRouter();
 
   const {
-    signMessage,
-    data: signedData,
-    isLoading,
-    isError,
-    isSuccess,
-    error,
-    reset,
-    variables,
-  } = useSignMessage({
-    onSuccess(data) {
-      console.log("Signature:", data);
+    signTypedData: signOrder,
+    data: orderSignedData,
+    isLoading: orderIsLoading,
+    isError: orderIsError,
+    isSuccess: orderIsSuccess,
+    error: orderError,
+    reset: orderReset,
+    variables: orderVariables,
+  } = useSignTypedData({
+    onSuccess: (data) => {
       const formData = {
         chainId,
         nonce,
         tokenAddress,
         amount,
-        deadline,
+        openDeadline,
+        fillDeadline,
         ephemeralAddress,
+        address,
       };
       onSign?.(data, formData);
     },
   });
 
+  const { data: computedAddress } = useReadContract({
+    address: getContractAddress(chainId, "intentFactory"),
+    abi: abis.intentFactory,
+    functionName: "getIntentAddress",
+    args: [intentOrder, ethers.id(SALT)],
+    query: {
+      enabled: !!intentOrder,
+    },
+  });
+
   useEffect(() => {
     (async () => {
-      if (variables?.message && signedData) {
+      if (orderVariables?.message && orderSignedData && !!computedAddress) {
         try {
-          const recoveredAddr = await recoverMessageAddress({
-            message: variables.message,
-            signature: signedData,
+          const recoveredAddr = await recoverTypedDataAddress({
+            domain: orderVariables.domain,
+            types: orderVariables.types,
+            primaryType: orderVariables.primaryType,
+            message: orderVariables.message,
+            signature: orderSignedData,
           });
 
-          const ephemeralAddress = "0xEphemeral1234";
-          console.log("Ephemeral Address:", ephemeralAddress);
-          console.log("Token Address:", tokenAddress);
-          console.log("Amount:", amount);
-
-          _setEphemeralAddress(ephemeralAddress);
+          _setEphemeralAddress(computedAddress);
           _setTokenAddress(tokenAddress);
           _setAmount(amount);
+          _setChainId(chainId);
+          _setDestChainId(destChainId);
+          _setUserAddress(address);
+          -_setFillDeadline(fillDeadline);
+          _setIntentOrder({ ...intentOrder, intentAddress: computedAddress });
 
           setRecoveredAddress(recoveredAddr);
-          console.log("Recovered Address:", recoveredAddr);
         } catch (err) {
           console.error("Error recovering address:", err);
         }
       }
     })();
-  }, [signedData, variables?.message]);
+  }, [orderSignedData, orderVariables?.message, computedAddress]);
 
   const handleSignOrder = async () => {
     setFormError("");
@@ -91,18 +117,19 @@ const SignIntentForm = ({
       return;
     }
 
-    if (signature) {
-      setFormError("You have already signed this intent!");
-      return;
-    }
-
     const parsedChainId = parseInt(chainId, 10);
+    const parsedDestChainId = parseInt(destChainId, 10);
     const parsedNonce = parseInt(nonce, 10);
-    const parsedDeadline = parseInt(deadline, 10);
-    const parsedAmount = Number(amount);
+    const parsedOpenDeadline = parseInt(openDeadline, 10);
+    const parsedFillDeadline = parseInt(fillDeadline, 10);
+    const parsedAmount = parseInt(amount);
 
     if (isNaN(parsedChainId) || parsedChainId <= 0) {
-      setFormError("Origin Chain ID must be a positive integer.");
+      setFormError("Source Chain ID must be a positive integer.");
+      return;
+    }
+    if (isNaN(parsedDestChainId) || parsedDestChainId <= 0) {
+      setFormError("Destination Chain ID must be a positive integer.");
       return;
     }
 
@@ -111,7 +138,14 @@ const SignIntentForm = ({
       return;
     }
 
-    if (isNaN(parsedDeadline) || parsedDeadline <= 0) {
+    if (isNaN(parsedOpenDeadline) || parsedOpenDeadline <= 0) {
+      setFormError(
+        "Open Deadline must be a valid positive integer (timestamp)."
+      );
+      return;
+    }
+
+    if (isNaN(parsedFillDeadline) || parsedFillDeadline <= 0) {
       setFormError(
         "Fill Deadline must be a valid positive integer (timestamp)."
       );
@@ -131,27 +165,65 @@ const SignIntentForm = ({
       return;
     }
 
+    // user signes GasslessCrossChainOrder
+    const usdt = getToken(chainId, tokenIds.usdt);
+    const bridgeData = ethers.AbiCoder.defaultAbiCoder().encode(
+      ["address", "address", "uint256", "uint256", "address", "address"],
+      [
+        "0x0000000000000000000000000000000000000000",
+        usdt.address,
+        ethers.parseEther(amount),
+        parsedDestChainId,
+        usdt.address,
+        address,
+      ]
+    );
+
     const order = {
+      intentAddress: "0x0000000000000000000000000000000000000000",
       user: address,
-      originChainId: parsedChainId,
       nonce: parsedNonce,
-      fillDeadline: parsedDeadline,
+      sourceChainId: parsedChainId,
+      openDeadline: parsedOpenDeadline, // calculate manually
+      fillDeadline: parsedFillDeadline, // calculate manually
       orderDataType: keccak256(toUtf8Bytes("BRIDGE_TRANSFER_ORDER")),
-      orderData: {
-        token: tokenAddress,
-        amount: amount,
-      },
+      orderData: bridgeData,
     };
 
-    const orderHash = keccak256(toUtf8Bytes(JSON.stringify(order)));
-    console.log("orderHash:", orderHash);
+    setIntentOrder(order);
+    console.log("Order: ", order);
 
-    reset();
+    orderReset();
     try {
-      const ephemeralAddress = "0xEphemeral1234";
-      _setEphemeralAddress(ephemeralAddress);
-
-      await signMessage({ message: orderHash });
+      // signMessage({ message: orderMessage });
+      signOrder({
+        domain: {
+          name: "SignOrder",
+          version: "1",
+          chainId: chainId, // Replace with actual chain ID
+          verifyingContract: getContractAddress(chainId, "intentFactory"), // Replace with your contract address
+        },
+        types: {
+          EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "version", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+          ],
+          Order: [
+            { name: "intentAddress", type: "address" },
+            { name: "user", type: "address" },
+            { name: "nonce", type: "uint256" },
+            { name: "sourceChainId", type: "uint256" },
+            { name: "openDeadline", type: "uint32" },
+            { name: "fillDeadline", type: "uint32" },
+            { name: "orderDataType", type: "bytes32" },
+            { name: "orderData", type: "bytes" },
+          ],
+        },
+        message: order,
+        primaryType: "Order",
+      });
     } catch (err) {
       console.error("Signing error:", err);
       setFormError(`Error signing the order: ${err.message || err}`);
@@ -159,23 +231,29 @@ const SignIntentForm = ({
   };
 
   // Decide if we should show the success UI or the form
-  const showSuccessUI = isSuccess && signedData;
+  const orderSignSuccess = orderIsSuccess && orderSignedData;
 
   // Fill in defaults
   const handleFillDefaults = () => {
-    setChainId("31337");
+    const currentTimeStamp = Math.floor(Date.now() / 1000);
+
+    setChainId("11155111");
+    setDestChainId("357");
     setNonce("1234");
-    setTokenAddress("0x1234567890abcdef1234567890abcdef12345678");
+    setTokenAddress("0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A");
     setAmount("100");
-    setDeadline("1699999999");
+    setOpenDeadline(currentTimeStamp + 3600 * 1); // 1 hour
+    setFillDeadline(currentTimeStamp + 3600 * 24); // 1 day
   };
 
   const handleResetInputs = () => {
     setChainId("");
+    setDestChainId("");
     setNonce("");
     setTokenAddress("");
     setAmount("");
-    setDeadline("");
+    setOpenDeadline("");
+    setFillDeadline("");
     setFormError("");
   };
 
@@ -199,18 +277,18 @@ const SignIntentForm = ({
             Please connect your wallet to sign the intent.
           </Alert>
         </>
-      ) : showSuccessUI ? (
+      ) : orderSignSuccess ? (
         <>
           <Alert severity="success" sx={{ mb: 2 }}>
             Successfully signed the intent!
           </Alert>
-          {signedData && (
+          {orderSignedData && (
             <Box sx={{ my: 2, textAlign: "left" }}>
               <Typography variant="subtitle2" gutterBottom>
                 <strong>Signature:</strong>
               </Typography>
               <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-                {signedData}
+                {orderSignedData}
               </Typography>
             </Box>
           )}
@@ -226,10 +304,10 @@ const SignIntentForm = ({
             variant="outlined"
             sx={{ mt: 2 }}
             onClick={() => {
-              setSignature(signedData);
+              setSignature(orderSignedData);
             }}
           >
-            Transfer Funds
+            Next
           </Button>
         </>
       ) : (
@@ -244,22 +322,32 @@ const SignIntentForm = ({
             </Alert>
           )}
 
-          {isError && !formError && (
+          {orderIsError && !formError && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              <strong>Error signing message:</strong> {error?.message}
+              <strong>Error signing message:</strong> {orderError?.message}
             </Alert>
           )}
 
           {/* Fields with type="number" */}
           <TextField
             type="number"
-            label="Origin Chain ID"
+            label="Source Chain ID"
             value={chainId}
             onChange={(e) => setChainId(e.target.value)}
-            placeholder="e.g. 31337"
+            placeholder="e.g. 11155111"
             fullWidth
             margin="normal"
-            disabled={signedData}
+            disabled={orderSignedData}
+          />
+          <TextField
+            type="number"
+            label="Destination Chain ID"
+            value={destChainId}
+            onChange={(e) => setDestChainId(e.target.value)}
+            placeholder="e.g. 357"
+            fullWidth
+            margin="normal"
+            disabled={orderSignedData}
           />
           <TextField
             type="number"
@@ -269,7 +357,7 @@ const SignIntentForm = ({
             placeholder="e.g. 1234"
             fullWidth
             margin="normal"
-            disabled={signedData}
+            disabled={orderSignedData}
           />
           <TextField
             label="Token Address"
@@ -278,7 +366,7 @@ const SignIntentForm = ({
             placeholder="0x + 40 hex characters"
             fullWidth
             margin="normal"
-            disabled={signedData}
+            disabled={orderSignedData}
           />
           <TextField
             type="number"
@@ -288,20 +376,30 @@ const SignIntentForm = ({
             placeholder="e.g. 100"
             fullWidth
             margin="normal"
-            disabled={signedData}
+            disabled={orderSignedData}
+          />
+          <TextField
+            type="number"
+            label="Open Deadline"
+            value={openDeadline}
+            onChange={(e) => setOpenDeadline(e.target.value)}
+            placeholder="Unix timestamp, e.g. 1699999999"
+            fullWidth
+            margin="normal"
+            disabled={orderSignedData}
           />
           <TextField
             type="number"
             label="Fill Deadline"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
+            value={fillDeadline}
+            onChange={(e) => setFillDeadline(e.target.value)}
             placeholder="Unix timestamp, e.g. 1699999999"
             fullWidth
             margin="normal"
-            disabled={signedData}
+            disabled={orderSignedData}
           />
 
-          {!signedData && (
+          {!orderSignedData && (
             <Box display="flex" justifyContent="space-between" mt={2} mb={2}>
               <Button
                 variant="outlined"
@@ -328,11 +426,11 @@ const SignIntentForm = ({
               "&:hover": { backgroundColor: "#c76058" },
             }}
             onClick={handleSignOrder}
-            disabled={isLoading || signedData}
+            disabled={orderIsLoading || orderSignedData}
           >
-            {isLoading
+            {orderIsLoading
               ? "Signing..."
-              : signedData
+              : orderSignedData
               ? "Already Signed"
               : "Sign Order"}
           </Button>

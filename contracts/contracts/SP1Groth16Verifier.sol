@@ -43,7 +43,7 @@ contract SP1Groth16Verifier is Groth16Verifier, IGroth16Verifier {
 		bytes32 programVKey,
 		bytes calldata publicValues,
 		bytes calldata proofBytes
-	) external view returns (bool) {
+	) external view {
 		bytes4 receivedSelector = bytes4(proofBytes[:4]);
 		bytes4 expectedSelector = bytes4(VERIFIER_HASH());
 		if (receivedSelector != expectedSelector) {
@@ -74,7 +74,5 @@ contract SP1Groth16Verifier is Groth16Verifier, IGroth16Verifier {
 		// console.logUint(inputs[1]);
 		// this.Verify(proof, inputs);
 		require(this.verifyProof(pA, pB, pC, inputs), "invalid proof");
-
-		return true;
 	}
 }

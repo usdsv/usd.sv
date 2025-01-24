@@ -1,141 +1,194 @@
 // components/DeploymentWatcher.jsx
+import { Box, Link, Paper, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import { abis } from "@/abi";
+import {
+  getContractAddress,
+  ExplorerLink,
+  getToken,
+  tokenIds,
+} from "@/config/networks";
+import {
+  useAccount,
+  useReadContract,
+  useTransaction,
+  useTransactionReceipt,
+  useWatchContractEvent,
+} from "wagmi";
 import { ethers } from "ethers";
-import chainData from "../chainConfig.json";
+import { zeroAddress } from "viem";
 
-const SOURCE_CHAIN_ID = 357; // OP Stack Rollup
-const DESTINATION_CHAIN_ID = 763373; // Ink Sepolia (or 11155111 for normal Sepolia, etc.)
-
-const FACTORY_ADDRESS = "0xFactoryAddressHere";
-const ERC20_ADDRESS = "0xSomeERC20Here";
-const EPHEMERAL_ADDRESS = "0xEphemeralAddressHere";
-const INTENT_DEPLOYED_TOPIC = ethers.utils.id(
-  "IntentDeployed(address,GaslessCrossChainOrder)"
-);
-const TRANSFER_TOPIC = ethers.utils.id("Transfer(address,address,uint256)");
-const BRIDGING_EVENT_TOPIC = ethers.utils.id(
-  "BridgingFinalized(address,uint256)"
-);
-
-const DeploymentWatcher = () => {
+const DeploymentWatcher = ({
+  sourceChainId,
+  destChainId,
+  ephemeralAddress,
+  tokenAmount,
+}) => {
   const [sourceDeployed, setSourceDeployed] = useState(false);
-  const [destinationDeployed, setDestinationDeployed] = useState(false);
   const [userTransferDone, setUserTransferDone] = useState(false);
+  const [sourceDeployTx, setSourceDeployTx] = useState(null);
   const [fillerTransferDone, setFillerTransferDone] = useState(false);
+  const [destinationDeployed, setDestinationDeployed] = useState(false);
+  const [destDepolyTx, setDestDeployTx] = useState(null);
 
-  useEffect(() => {
-    const chainList = chainData.chains;
-    const sourceChain = chainList.find((c) => c.chainId === SOURCE_CHAIN_ID);
-    const destinationChain = chainList.find(
-      (c) => c.chainId === DESTINATION_CHAIN_ID
-    );
+  const { isConnected, address } = useAccount();
 
-    const providers = [];
+  const { data: bridgeData } = useReadContract({
+    address: ephemeralAddress,
+    abi: abis.dualChainIntent,
+    functionName: "bridgeData",
+  });
 
-    const setupSourceListener = (wssUrl) => {
-      const wsProvider = new ethers.providers.WebSocketProvider(wssUrl);
-      providers.push(wsProvider);
+  sourceChainId = parseInt(sourceChainId, 10);
+  destChainId = parseInt(destChainId, 10);
 
-      wsProvider.on(
-        {
-          address: FACTORY_ADDRESS,
-          topics: [INTENT_DEPLOYED_TOPIC],
-        },
-        (log) => {
-          console.log("Source chain: IntentDeployed event", log);
+  console.log("SourceChainId: ", sourceChainId);
+  console.log("DestChainId: ", destChainId);
+  console.log("EphemeralAddress: ", ephemeralAddress);
+
+  // Source Intent Deploy Watcher
+  try {
+    useWatchContractEvent({
+      address: getContractAddress(sourceChainId, "intentFactory"),
+      chainId: sourceChainId,
+      abi: abis.intentFactory,
+      eventName: "IntentDeployed",
+      onLogs(logs) {
+        console.log("SourceChainIntent: ", logs);
+        if (logs.length) {
           setSourceDeployed(true);
+          setSourceDeployTx(logs[0].transactionHash);
         }
-      );
+      },
+    });
+  } catch (e) {}
 
-      wsProvider.on(
-        {
-          address: ERC20_ADDRESS,
-          topics: [
-            TRANSFER_TOPIC,
-            null,
-            ethers.utils.hexZeroPad(EPHEMERAL_ADDRESS, 32),
-          ],
-        },
-        (log) => {
-          console.log("Source chain: User transfer to ephemeral address", log);
-          setUserTransferDone(true);
-        }
-      );
-    };
-
-    const setupDestinationListener = (wssUrl) => {
-      const wsProvider = new ethers.providers.WebSocketProvider(wssUrl);
-      providers.push(wsProvider);
-
-      wsProvider.on(
-        {
-          address: FACTORY_ADDRESS,
-          topics: [INTENT_DEPLOYED_TOPIC],
-        },
-        (log) => {
-          console.log("Destination chain: IntentDeployed event", log);
+  // Destination Intent Deploy Watcher
+  try {
+    useWatchContractEvent({
+      address: getContractAddress(destChainId, "intentFactory"),
+      chainId: destChainId,
+      abi: abis.intentFactory,
+      eventName: "IntentDeployed",
+      onLogs(logs) {
+        console.log("DestChainIntent: ", logs);
+        if (logs.length) {
           setDestinationDeployed(true);
+          setDestDeployTx(logs[0].transactionHash);
         }
-      );
+      },
+    });
+  } catch (e) {}
 
-      wsProvider.on(
-        {
-          address: ERC20_ADDRESS,
-          topics: [TRANSFER_TOPIC],
-        },
-        (log) => {
-          console.log(
-            "Destination chain: Transfer event from filler bridging",
-            log
-          );
-          setFillerTransferDone(true);
+  // User Transfer Watcher
+  try {
+    useWatchContractEvent({
+      address: getToken(sourceChainId, tokenIds.usdt).address,
+      chainId: sourceChainId,
+      abi: abis.erc20,
+      args: {
+        from: address.toLowerCase(),
+        to: ephemeralAddress.toLowerCase(),
+      },
+      eventName: "Transfer",
+      onLogs(logs) {
+        if (logs.length) {
+          console.log("user Token Transfer: ", logs);
+          logs.forEach((log) => {
+            const from = log.args.from.toLowerCase();
+            const to = log.args.to.toLowerCase();
+            const value = log.args.value;
+            if (
+              from === address.toLowerCase() &&
+              to === ephemeralAddress.toLowerCase() &&
+              value == ethers.parseEther(tokenAmount)
+            ) {
+              setUserTransferDone(true);
+            }
+          });
         }
-      );
+      },
+    });
+  } catch (e) {}
 
-      wsProvider.on(
-        {
-          address: EPHEMERAL_ADDRESS,
-          topics: [BRIDGING_EVENT_TOPIC],
-        },
-        (log) => {
-          console.log("Destination chain: Bridging finalization event", log);
-          setFillerTransferDone(true);
+  // Filler Transfer Watcher
+  try {
+    useWatchContractEvent({
+      address: getToken(destChainId, tokenIds.usdt).address,
+      chainId: destChainId,
+      abi: abis.erc20,
+      args: {
+        to: address.toLowerCase(),
+      },
+      eventName: "Transfer",
+      onLogs(logs) {
+        if (logs.length) {
+          console.log("user Token Transfer: ", logs);
+          const fillerAddress = bridgeData
+            ? bridgeData[0].toLowerCase()
+            : zeroAddress;
+
+          logs.forEach((log) => {
+            const from = log.args.from.toLowerCase();
+            const to = log.args.to.toLowerCase();
+
+            console.log("from filter: ", from);
+            console.log("to filter: ", to);
+            console.log("filler address: ", fillerAddress);
+
+            if (from === fillerAddress && to === address.toLowerCase()) {
+              setUserTransferDone(true);
+            }
+          });
         }
-      );
-    };
-
-    if (sourceChain?.wss) {
-      setupSourceListener(sourceChain.wss);
-    }
-
-    if (destinationChain?.wss) {
-      setupDestinationListener(destinationChain.wss);
-    }
-
-    return () => {
-      providers.forEach((p) => p.removeAllListeners());
-      providers.forEach((p) => p.destroy());
-    };
-  }, []);
+      },
+    });
+  } catch (e) {}
 
   return (
-    <div
-      style={{ border: "1px solid #ccc", padding: "1rem", marginTop: "1rem" }}
+    <Paper
+      elevation={2}
+      sx={{
+        p: 3,
+        borderRadius: 2,
+        textAlign: "left",
+      }}
     >
-      <h3>Deployment & Bridging Progress</h3>
-      <p>Source Chain Deployed? {sourceDeployed ? "Yes ✅" : "Pending..."}</p>
-      <p>
-        Source Chain User Transfer? {userTransferDone ? "Yes ✅" : "Pending..."}
-      </p>
-      <p>
-        Destination Chain Deployed?{" "}
-        {destinationDeployed ? "Yes ✅" : "Pending..."}
-      </p>
-      <p>
-        Destination Filler Transfer?{" "}
-        {fillerTransferDone ? "Yes ✅" : "Pending..."}
-      </p>
-    </div>
+      <Typography variant="h5" mb={3} sx={{ textAlign: "center" }}>
+        Deployment & Bridging Progress
+      </Typography>
+      <Box>
+        <p>Source Chain Deployed? {sourceDeployed ? "Yes ✅" : "Pending..."}</p>
+        {sourceDeployed && (
+          <Link href={`${ExplorerLink(sourceChainId)}tx\\${sourceDeployTx}`}>
+            Source Chain Deploy Tx
+          </Link>
+        )}
+      </Box>
+      <Box>
+        <p>
+          Source Chain User Transfer?{" "}
+          {userTransferDone ? "Yes ✅" : "Pending..."}
+        </p>
+      </Box>
+      <Box>
+        <p>
+          Destination Chain Deployed?{" "}
+          {destinationDeployed ? "Yes ✅" : "Pending..."}
+        </p>
+        {destinationDeployed && (
+          <Link href={`${ExplorerLink(destChainId)}tx\\${destDepolyTx}`}>
+            Dest Chain Tx
+          </Link>
+        )}
+      </Box>
+      <Box>
+        <p>
+          Destination Filler Transfer?{" "}
+          {fillerTransferDone ? "Yes ✅" : "Pending..."}
+        </p>
+      </Box>
+    </Paper>
   );
 };
 

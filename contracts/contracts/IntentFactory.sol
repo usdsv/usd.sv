@@ -4,13 +4,73 @@ pragma solidity ^0.8.0;
 // Importing the DualChainIntent contract
 import "./DualChainIntent.sol";
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+
 // IntentFactory is a contract that deploys instances of DualChainIntent
-contract IntentFactory {
+contract IntentFactory is Ownable {
+	// State variable to store the verifier address
+	address public verifier;
+
+	// Constant multiplier used for fee calculations
+	uint256 public constant MULTIPLIER = 10000;
+
+	// Mapping to store fee information for each address
+	// The key is the address, and the value is the associated fee amount
+	mapping(address => uint256) public feeInfo;
+
 	// Event emitted when a new intent is deployed
 	event IntentDeployed(
 		address indexed intentAddr, // Address of the deployed intent
 		GaslessCrossChainOrder order // The order associated with the intent
 	);
+
+	/**
+	 * @dev Constructor that initializes the contract and sets the deployer as the owner.
+	 *      Uses the Ownable constructor from OpenZeppelin.
+	 */
+	constructor() Ownable(msg.sender) {}
+
+	/**
+	 * @dev Function to set the fee information for a specific token
+	 * @param token The address of the token for which the fee is being set
+	 * @param fee The fee amount to be set for the specified token
+	 * @notice Only the owner of the contract can call this function
+	 */
+	function setFeeInfo(address token, uint256 fee) external onlyOwner {
+		// Ensure that the fee is less than 1% of the MULTIPLIER
+		require(fee < MULTIPLIER / 100, "Invalid fee");
+
+		// Set the fee information for the specified token
+		feeInfo[token] = fee;
+	}
+	/**
+	 * @dev Function to retrieve the fee information for a specific token
+	 * @param token The address of the token for which to get fee info
+	 * @return fee The fee amount associated with the specified token
+	 * @return multiplier The constant multiplier used for fee calculations
+	 */
+	function getFeeInfo(
+		address token
+	) external view returns (uint256 fee, uint256 multiplier) {
+		// Retrieve the fee amount for the specified token
+		fee = feeInfo[token];
+
+		// Return the constant MULTIPLIER
+		multiplier = MULTIPLIER;
+	}
+
+	/**
+	 * @dev Function to set the verifier address.
+	 *      Can only be called by the owner of the contract.
+	 * @param _verifier The address to set as the verifier.
+	 */
+	function setVerifier(address _verifier) external onlyOwner {
+		// Verify the address
+		require(_verifier != address(0), "Invaild verifier address");
+
+		// set verifier address as _verifier
+		verifier = _verifier;
+	}
 
 	/**
 	 * @dev Creates a new intent contract using the provided order and salt (CREATE2 opcode).

@@ -5,6 +5,9 @@ pragma solidity ^0.8.0;
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IGroth16Verifier } from "./interfaces/IGroth16Verifier.sol";
+import { IIntentFactory } from "./interfaces/IIntentFactory.sol";
+import { IDestinationSettler } from "./interfaces/IDestinationSettler.sol";
+import { MockERC20 } from "./MockERC20.sol";
 
 // Struct representing a GaslessCrossChainOrder (user signs the off-chain order with some values)
 struct GaslessCrossChainOrder {
@@ -28,22 +31,9 @@ struct BridgeTransferData {
 	address beneficiary; // Address of the beneficiary receiving the tokens from the dest chain
 }
 
-interface IDestinationSettler {
-	/// @notice Fills a single leg of a particular order on the destination chain.
-	function fill(
-		bytes32 orderId,
-		bytes calldata originData,
-		bytes calldata fillerData
-	) external;
-}
-
 // The Ephemeral Contract that handles the order with user and filler, and bridge token via two separeted chains
 contract DualChainIntent is IDestinationSettler {
 	using SafeERC20 for IERC20;
-
-	// Address of the SP1 Groth16 verifier contract
-	address public SP1VERIFIER_ADDRESS =
-		0x4660483e004e416D41bfd77D6425e98543beB6Ba;
 
 	// State variables
 	GaslessCrossChainOrder public order; // The current order
@@ -53,9 +43,13 @@ contract DualChainIntent is IDestinationSettler {
 	bool public destinationFulfilled; // Indicates if the destination has been fulfilled
 	bool public originCompleted; // Indicates if the origin process is completed
 
-	// Event emitted when an order is opened and fullfilled
+	// Address of the intent factory
+	address public intentFactory;
+
+	// Event emitted when an order is opened and fullfilled, withdrawn
 	event Open(bytes32 indexed orderId, address filler);
 	event Completed(bytes32 indexed orderId);
+	event Withdraw(bytes32 indexed orderId);
 
 	/**
 	 * @dev Constructor to initialize the DualChainIntent contract with a user order
@@ -67,6 +61,9 @@ contract DualChainIntent is IDestinationSettler {
 	 * - The current timestamp must be less than or equal to the openDeadline.
 	 */
 	constructor(GaslessCrossChainOrder memory _order) {
+		// Set intent factory address as a msg.sender
+		intentFactory = msg.sender;
+
 		// Store the provided order in the contract state
 		order = _order;
 
@@ -81,8 +78,8 @@ contract DualChainIntent is IDestinationSettler {
 
 		// Check that the order has not expired based on the openDeadline
 		require(
-			block.timestamp <= _order.openDeadline,
-			"Order expired (openDeadline)"
+			(block.timestamp <= _order.openDeadline),
+			"Order open deadline expeired"
 		);
 
 		// Decode the order data into individual components
@@ -114,9 +111,17 @@ contract DualChainIntent is IDestinationSettler {
 	 *
 	 * @param _filler The address of the filler.
 	 *
+	 * @notice This function must be called at once after the constructor
+	 *
+	 * Requirements:
+	 * - Bridgedata.filler must be zero, not initialized
+	 *
 	 * Emits an Open event upon successful initialization.
 	 */
-	function initializeFiller(address _filler) public {
+	function initializeFiller(address _filler) external {
+		// Verify that the filler is not initialized
+		require(bridgeData.filler == address(0), "Filler already initialized");
+
 		// Set the filler address in the bridge transfer data
 		bridgeData.filler = _filler;
 
@@ -137,6 +142,60 @@ contract DualChainIntent is IDestinationSettler {
 	// }
 
 	/**
+	 * @dev Permit the ephemeral contract to spend token behalf of the user and send tokens.
+	 *
+	 * @param orderId The ID of the order being fulfilled.
+	 * @param v The v parameter of user signature
+	 * @param r The r parameter of user signature
+	 * @param s The s parameter of user signature
+	 *
+	 * Requirements:
+	 * - The provided orderId must match the hashed order.
+	 * - The transaction must be on the source chain.
+	 * - The caller must be the designated filler.
+	 * - The current timestamp must be less than or equal to the fillDeadline.
+	 */
+	function submitPermit(
+		bytes32 orderId,
+		uint8 v,
+		bytes32 r,
+		bytes32 s
+	) external {
+		// Verify that the provided orderId matches the current order's ID
+		require(orderId == generateOrderId(order), "Invalid orderId");
+
+		// Ensure the transaction is occurring on the correct source chain
+		require(block.chainid == order.sourceChainId, "Not source chain");
+
+		// Confirm that the caller is the designated filler for this transfer
+		require(msg.sender == bridgeData.filler, "Only filler can submit permit");
+
+		// Verify that the order has not expired
+		require(
+			block.timestamp <= order.fillDeadline,
+			"Order expired (fillDeadline)"
+		);
+
+		// Submit permit that ephemeral contract to spend tokens behalf of the user
+		MockERC20(bridgeData.sourceToken).permit(
+			order.user,
+			order.intentAddress,
+			bridgeData.amount,
+			order.fillDeadline,
+			v,
+			r,
+			s
+		);
+
+		// Transfer token from user to ephemeral contract
+		IERC20(bridgeData.sourceToken).safeTransferFrom(
+			order.user,
+			order.intentAddress,
+			bridgeData.amount
+		);
+	}
+
+	/**
 	 * @dev Fulfills the bridge transfer on the destination chain.
 	 *
 	 * @param orderId The ID of the order being fulfilled.
@@ -148,6 +207,7 @@ contract DualChainIntent is IDestinationSettler {
 	 * - The transaction must be on the destination chain.
 	 * - The transfer must not have been fulfilled already.
 	 * - The caller must be the designated filler.
+	 * - The current timestamp must be less than or equal to the fillDeadline.
 	 */
 	function fill(
 		bytes32 orderId,
@@ -172,14 +232,27 @@ contract DualChainIntent is IDestinationSettler {
 			"Only filler can finalize destination"
 		);
 
+		// Verify that the order has not expired
+		require(
+			block.timestamp <= order.fillDeadline,
+			"Order expired (fillDeadline)"
+		);
+
 		// Mark the destination as fulfilled
 		destinationFulfilled = true;
+
+		// Get fee info from intent factory
+		(uint256 fee, uint256 multiplier) = IIntentFactory(intentFactory)
+			.getFeeInfo(bridgeData.destinationToken);
+
+		// Calculate fee amount that filler reducts
+		uint256 feeAmount = (bridgeData.amount * fee) / multiplier;
 
 		// Transfer tokens from the filler to the beneficiary
 		IERC20(bridgeData.destinationToken).safeTransferFrom(
 			bridgeData.filler, // From: filler address
 			bridgeData.beneficiary, // To: beneficiary address
-			bridgeData.amount // Amount to transfer
+			bridgeData.amount - feeAmount // Amount to transfer
 		);
 	}
 
@@ -213,12 +286,11 @@ contract DualChainIntent is IDestinationSettler {
 		);
 
 		// Verify the SP1 Groth16 proof using the specified verifier contract
-		bool validProof = IGroth16Verifier(SP1VERIFIER_ADDRESS).verifyProof(
+		IGroth16Verifier(IIntentFactory(intentFactory).verifier()).verifyProof(
 			programVKey, // Verification key
 			publicValues, // Public values for the proof
 			proofBytes // Serialized proof data
 		);
-		require(validProof, "Invalid Groth16 proof");
 
 		// Check the balance of escrowed tokens in this contract
 		uint256 bal = IERC20(bridgeData.sourceToken).balanceOf(address(this));
@@ -238,6 +310,47 @@ contract DualChainIntent is IDestinationSettler {
 	}
 
 	/**
+	 * @dev Finalizes the order with withdrawn by user on the origin chain due to no filler.
+	 *
+	 * @param orderId The ID of the order being withdrawn from the origin chain.
+	 *
+	 * Requirements:
+	 * - The chain ID must match the source chain ID.
+	 * - The order ID must match the generated orderId.
+	 * - The msg.sender must match the order.user.
+	 * - The order must not be fulfilled.
+	 * - The current timestamp must be greater than or equal to the fillDeadline and 5 minutes.
+	 */
+	function withdraw(bytes32 orderId) external {
+		// Ensure the transaction is occurring on the correct origin chain
+		require(block.chainid == order.sourceChainId, "Not origin chain");
+
+		// Verify that the provided orderId matches the current order's ID
+		require(orderId == generateOrderId(order), "Invalid order");
+
+		// Veify that only user can call this function
+		require(msg.sender == order.user, "Only user can call this function");
+
+		// Verify that the order is expired base on the fillDeadline
+		require(
+			block.timestamp >= (order.fillDeadline + 300),
+			"Can withdraw after 5 minutes from the fillDeadline"
+		);
+
+		// Verify that the order is not Fulfilled
+		require(!originCompleted, "Order already completed by filler");
+
+		// Transfer tokens back to the user
+		IERC20(bridgeData.sourceToken).safeTransfer(
+			order.user,
+			bridgeData.amount
+		);
+
+		// Emit the withdraw event that the user has withdrawn tokens back
+		emit Withdraw(orderId);
+	}
+
+	/**
 	 * @dev Generates a unique order ID by hashing the provided order data.
 	 *
 	 * @param _order The GaslessCrossChainOrder for which the ID is being generated.
@@ -245,7 +358,7 @@ contract DualChainIntent is IDestinationSettler {
 	 */
 	function generateOrderId(
 		GaslessCrossChainOrder memory _order
-	) internal pure returns (bytes32) {
+	) public pure returns (bytes32) {
 		// Return the keccak256 hash of the encoded order data
 		return keccak256(abi.encode(_order));
 	}
