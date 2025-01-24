@@ -9,8 +9,13 @@ import StepIndicator from "../../../components/StepIndicator";
 import { apiService } from "@/services/apiService";
 import { ethers } from "ethers";
 
+import { IS_TEST } from "@/config/constants";
+import DeploymentWatcher from "@/components/DeploymentWatcher";
+
 const SignerPage = () => {
   // State variables
+  const [userStep, setUserStep] = useState(1);
+
   const [intentOrder, setIntentOrder] = useState(null);
   const [orderSignature, setOrderSignature] = useState(null);
   const [permitData, setPermitData] = useState(null);
@@ -77,21 +82,16 @@ const SignerPage = () => {
             ]
           );
 
-          // const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
-          //   ["address", "address", "uint256", "uint256", "uint256"],
-          //   permitRawbytes
-          // );
-          // console.log(permitRawbytes);
-          // console.log(decoded);
+          if (!IS_TEST) {
+            const result = await apiService.submitOrder({
+              permitsignature: permitSignature,
+              permitrawbytes: permitRawbytes,
+              ordersignature: orderSignature,
+              orderrawbytes: orderRawbytes,
+            });
 
-          const result = await apiService.submitOrder({
-            permitsignature: permitSignature,
-            permitrawbytes: permitRawbytes,
-            ordersignature: orderSignature,
-            orderrawbytes: orderRawbytes,
-          });
-
-          console.log(result);
+            console.log(result);
+          }
         } catch (err) {
           console.error("Error posting signature: ", err);
         }
@@ -101,6 +101,63 @@ const SignerPage = () => {
 
   // If signature is non-empty, user has signed
   const isOrderSigned = !!orderSignature;
+  const isPermitSigned = !!permitSignature;
+
+  useEffect(() => {
+    setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
+  });
+
+  const intentSignForm = (
+    <>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+        Sign Your Intent
+      </Typography>
+      <SignIntentForm
+        setSignature={setOrderSignature}
+        onSign={handleSign}
+        _setIntentOrder={setIntentOrder}
+        _setEphemeralAddress={setEphemeralAddress}
+        _setTokenAddress={setTokenAddress}
+        _setAmount={setAmount}
+        _setChainId={setChainId}
+        _setDestChainId={setDestChainId}
+        _setUserAddress={setUserAddress}
+      />
+    </>
+  );
+  const permitSignForm = (
+    <>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+        Sign Permit
+      </Typography>
+      <SignPermitForm
+        intentOrder={intentOrder}
+        ephemeralAddress={ephemeralAddress}
+        userAddress={userAddress}
+        tokenAddress={tokenAddress}
+        amount={amount}
+        chainId={chainId}
+        destChainId={destChainId}
+        _setPermitData={setPermitData}
+        _setSignature={setPermitSignature}
+      />
+    </>
+  );
+  const deploymentWatcherForm = (
+    <>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+        Deployment Watcher
+      </Typography>
+      <DeploymentWatcher />
+    </>
+  );
+
+  const formIndicator = () => {
+    if (userStep == 1) return intentSignForm;
+    else if (userStep == 2) return permitSignForm;
+    else if (userStep == 3) return deploymentWatcherForm;
+    else return null;
+  };
 
   return (
     <Box
@@ -122,43 +179,10 @@ const SignerPage = () => {
         }}
       >
         {/* Step Indicator */}
-        <StepIndicator currentStep={isOrderSigned ? 2 : 1} />
+        <StepIndicator currentStep={userStep} />
 
         {/* Content based on signing state */}
-        {!!isOrderSigned ? (
-          <>
-            <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-              Sign Permit
-            </Typography>
-            <SignPermitForm
-              ephemeralAddress={ephemeralAddress}
-              userAddress={userAddress}
-              tokenAddress={tokenAddress}
-              amount={amount}
-              chainId={chainId}
-              destChainId={destChainId}
-              _setPermitData={setPermitData}
-              _setSignature={setPermitSignature}
-            />
-          </>
-        ) : (
-          <>
-            <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-              Sign Your Intent
-            </Typography>
-            <SignIntentForm
-              setSignature={setOrderSignature}
-              onSign={handleSign}
-              _setIntentOrder={setIntentOrder}
-              _setEphemeralAddress={setEphemeralAddress}
-              _setTokenAddress={setTokenAddress}
-              _setAmount={setAmount}
-              _setChainId={setChainId}
-              _setDestChainId={setDestChainId}
-              _setUserAddress={setUserAddress}
-            />
-          </>
-        )}
+        {formIndicator()}
       </Container>
     </Box>
   );

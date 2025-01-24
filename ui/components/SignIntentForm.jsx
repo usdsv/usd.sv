@@ -8,13 +8,9 @@ import { useAccount, useSignTypedData, useReadContract } from "wagmi";
 import { Box, Typography, TextField, Button, Alert } from "@mui/material";
 import { ethers } from "ethers";
 
-import {
-  ADDRESS_MOCT_USDT,
-  ADDRESS_INTENT_FACTORY,
-  CHAIN_INFO,
-  SALT,
-} from "@/config/constants";
+import { SALT } from "@/config/constants";
 import { abis } from "@/abi";
+import { getContractAddress, getToken, tokenIds } from "@/config/networks";
 
 const SignIntentForm = ({
   onSign,
@@ -69,7 +65,7 @@ const SignIntentForm = ({
   });
 
   const { data: computedAddress } = useReadContract({
-    address: ADDRESS_INTENT_FACTORY[CHAIN_INFO["chain_" + chainId]],
+    address: getContractAddress(chainId, "intentFactory"),
     abi: abis.intentFactory,
     functionName: "getIntentAddress",
     args: [intentOrder, ethers.id(SALT)],
@@ -169,14 +165,15 @@ const SignIntentForm = ({
     }
 
     // user signes GasslessCrossChainOrder
+    const usdt = getToken(chainId, tokenIds.usdt);
     const bridgeData = ethers.AbiCoder.defaultAbiCoder().encode(
       ["address", "address", "uint256", "uint256", "address", "address"],
       [
         "0x0000000000000000000000000000000000000000",
-        ADDRESS_MOCT_USDT,
+        usdt.address,
         ethers.parseEther(amount),
         parsedDestChainId,
-        ADDRESS_MOCT_USDT,
+        usdt.address,
         address,
       ]
     );
@@ -202,8 +199,7 @@ const SignIntentForm = ({
           name: "SignOrder",
           version: "1",
           chainId: chainId, // Replace with actual chain ID
-          verifyingContract:
-            ADDRESS_INTENT_FACTORY[CHAIN_INFO["chain_" + chainId]], // Replace with your contract address
+          verifyingContract: getContractAddress(chainId, "intentFactory"), // Replace with your contract address
         },
         types: {
           EIP712Domain: [

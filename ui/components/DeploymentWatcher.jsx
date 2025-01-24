@@ -9,13 +9,11 @@ const DESTINATION_CHAIN_ID = 763373; // Ink Sepolia (or 11155111 for normal Sepo
 const FACTORY_ADDRESS = "0xFactoryAddressHere";
 const ERC20_ADDRESS = "0xSomeERC20Here";
 const EPHEMERAL_ADDRESS = "0xEphemeralAddressHere";
-const INTENT_DEPLOYED_TOPIC = ethers.utils.id(
+const INTENT_DEPLOYED_TOPIC = ethers.id(
   "IntentDeployed(address,GaslessCrossChainOrder)"
 );
-const TRANSFER_TOPIC = ethers.utils.id("Transfer(address,address,uint256)");
-const BRIDGING_EVENT_TOPIC = ethers.utils.id(
-  "BridgingFinalized(address,uint256)"
-);
+const TRANSFER_TOPIC = ethers.id("Transfer(address,address,uint256)");
+const BRIDGING_EVENT_TOPIC = ethers.id("BridgingFinalized(address,uint256)");
 
 const DeploymentWatcher = () => {
   const [sourceDeployed, setSourceDeployed] = useState(false);

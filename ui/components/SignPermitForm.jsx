@@ -14,12 +14,19 @@ import {
 import { useAccount } from "wagmi";
 import { recoverTypedDataAddress } from "viem";
 
-import { useSignTypedData, useReadContract } from "wagmi";
+import {
+  useSignTypedData,
+  useReadContract,
+  useEstimateGas,
+  usePrepareTransactionRequest,
+} from "wagmi";
 
-import { ADDRESS_INTENT_FACTORY, CHAIN_INFO } from "@/config/constants";
+import { SALT } from "@/config/constants";
 import { abis } from "@/abi";
+import { getContractAddress } from "@/config/networks";
 
 const SignPermitForm = ({
+  intentOrder,
   ephemeralAddress,
   userAddress,
   tokenAddress,
@@ -30,6 +37,8 @@ const SignPermitForm = ({
   _setSignature,
 }) => {
   const [recoveredAddress, setRecoveredAddress] = useState("");
+  const [estimateGas, setEstimateGas] = useState("");
+  const [estimateReward, setEstimateReward] = useState("");
   // Wagmi hooks
   const { isConnected } = useAccount();
 
@@ -57,12 +66,99 @@ const SignPermitForm = ({
     functionName: "name",
   });
 
+  const { data: destTokenSymbol } = useReadContract({
+    address: tokenAddress,
+    abi: abis.erc20,
+    functionName: "symbol",
+  });
+
   const { data: destTokenFee } = useReadContract({
-    address: ADDRESS_INTENT_FACTORY[CHAIN_INFO["chain_" + destChainId]],
+    address: getContractAddress(destChainId, "intentFactory"),
     abi: abis.intentFactory,
     functionName: "getFeeInfo",
     args: [tokenAddress],
   });
+
+  const { data: preparedWriteSource } = usePrepareTransactionRequest({
+    address: getContractAddress(chainId, "intentFactory"),
+    abi: abis.intentFactory,
+    functionName: "createIntent",
+    args: [intentOrder, ethers.id(SALT)],
+  });
+
+  const { data: preparedWriteDest } = usePrepareTransactionRequest({
+    address: getContractAddress(destChainId, "intentFactory"),
+    abi: abis.intentFactory,
+    functionName: "createIntent",
+    args: [intentOrder, ethers.id(SALT)],
+  });
+
+  const {
+    data: estimateGasSource,
+    isLoadingSource,
+    isErrorSource,
+  } = useEstimateGas({
+    ...preparedWriteSource,
+  });
+
+  const {
+    data: estimateGasDest,
+    isLoadingDest,
+    isErrorDest,
+  } = useEstimateGas({
+    ...preparedWriteDest,
+  });
+
+  const TX_FILLER_FILL = {
+    to: userAddress,
+    value: amount,
+  };
+  const { data: estimateFillGas } = useEstimateGas({ ...TX_FILLER_FILL });
+
+  const TX_FILLER_UNSCROW = {
+    to: userAddress,
+    value: amount,
+  };
+  const { data: estimateUnscrowGas } = useEstimateGas({ ...TX_FILLER_UNSCROW });
+
+  const TX_FILLER_PERMIT = {
+    to: ephemeralAddress,
+    value: amount,
+  };
+  const { data: estimatePermitGas } = useEstimateGas({ ...TX_FILLER_PERMIT });
+
+  useEffect(() => {
+    (async () => {
+      if (
+        !!destTokenFee &&
+        !!estimateGasSource &&
+        !!estimateGasDest &&
+        !!estimateFillGas &&
+        !!estimateUnscrowGas &&
+        !!estimatePermitGas
+      ) {
+        setEstimateReward(
+          (amount * Number(destTokenFee[0])) / Number(destTokenFee[1])
+        );
+        setEstimateGas(
+          Number(
+            estimateGasSource +
+              estimateGasDest +
+              estimateFillGas +
+              estimateUnscrowGas +
+              estimatePermitGas
+          ) / Number(10 ** 9)
+        );
+      }
+    })();
+  }, [
+    destTokenFee,
+    estimateGasSource,
+    estimateGasDest,
+    estimateFillGas,
+    estimateUnscrowGas,
+    estimatePermitGas,
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -77,8 +173,6 @@ const SignPermitForm = ({
           });
 
           setRecoveredAddress(recoveredAddr);
-
-          _setSignature(permitSignedData);
         } catch (err) {
           console.error("Error recovering address:", err);
         }
@@ -125,12 +219,13 @@ const SignPermitForm = ({
         },
       ],
     };
+    const currentTimeStamp = Math.floor(Date.now() / 1000);
     const permitValues = {
       owner: userAddress,
       spender: ephemeralAddress,
       value: ethers.parseEther(amount),
       nonce: sourceTokenNonce,
-      deadline: 1699999999,
+      deadline: currentTimeStamp + 3600 * 1,
     };
 
     _setPermitData(permitValues);
@@ -185,13 +280,23 @@ const SignPermitForm = ({
           )}
           <Box sx={{ mt: 2, textAlign: "left" }}>
             <Typography variant="subtitle2" gutterBottom>
-              <strong>Gas Estimate:</strong>
+              <strong>Estimation:</strong>
             </Typography>
-            <Typography variant="body2">{destTokenFee}</Typography>
-            <Typography variant="body2">{destChainId}</Typography>
+            <Typography variant="body2">
+              Filler Gas Estimation : {estimateGas} Gwei
+            </Typography>
+            <Typography variant="body2">
+              Filler Reward Estimation : {estimateReward} {destTokenSymbol}
+            </Typography>
           </Box>
 
-          <Button variant="outlined" sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            sx={{ mt: 2 }}
+            onClick={() => {
+              _setSignature(permitSignedData);
+            }}
+          >
             Next
           </Button>
         </>

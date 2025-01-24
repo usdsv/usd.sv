@@ -6,6 +6,7 @@ import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { inkSepolia, sepolia } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+
 const opstackrollup = {
   id: 357,
   name: "OP Stack Rollup",
