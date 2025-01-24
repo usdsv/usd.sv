@@ -45,15 +45,6 @@ const DeploymentWatcher = ({
   console.log("SourceChainId: ", sourceChainId);
   console.log("DestChainId: ", destChainId);
   console.log("EphemeralAddress: ", ephemeralAddress);
-  // useEffect(() => {
-  //   const wait = new Promise((resolve) => setTimeout(resolve, 5000));
-
-  //   const test = async () => {
-  //     await test();
-  //   };
-
-  //   test();
-  // }, []);
 
   // Source Intent Deploy Watcher
   try {
