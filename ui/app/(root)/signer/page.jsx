@@ -2,20 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Container } from "@mui/material";
-import SignIntentForm from "../../../components/SignIntentForm";
-import SignPermitForm from "../../../components/SignPermitForm";
-import StepIndicator from "../../../components/StepIndicator";
+import SignIntentForm from "../../../components/containers/SignIntentForm";
+import SignPermitForm from "../../../components/containers/SignPermitForm";
+import StepIndicator from "../../../components/widgets/StepIndicator";
 
 import { apiService } from "@/services/apiService";
 import { ethers } from "ethers";
 
 import { IS_TEST } from "@/config/constants";
-import DeploymentWatcher from "@/components/DeploymentWatcher";
+import DeploymentWatcher from "@/components/containers/DeploymentWatcher";
 
 const SignerPage = () => {
   // State variables
   const [userStep, setUserStep] = useState(1);
-
+  const [stepsCompleted, setStepsCompleted] = useState([false, false]);
   const [intentOrder, setIntentOrder] = useState(null);
   const [orderSignature, setOrderSignature] = useState(null);
   const [permitData, setPermitData] = useState(null);
@@ -27,6 +27,21 @@ const SignerPage = () => {
   const [chainId, setChainId] = useState(null);
   const [destChainId, setDestChainId] = useState(null);
   const [fillDeadline, setFillDeadline] = useState(null);
+
+  // Mark a step as completed
+  const markStepComplete = (stepIndex) => {
+    setStepsCompleted((prev) => {
+      const updatedSteps = [...prev];
+      updatedSteps[stepIndex] = true; // Update the specific step index
+      return updatedSteps;
+    });
+    switchPaging(stepIndex + 1); // Call your function with the step index
+  };
+
+  // Provide a helper function to switch pages manually
+  const switchPaging = (page) => {
+    setUserStep(page);
+  };
 
   // Called by SignIntentForm after successful signing
   const handleSign = (sig, formData) => {
@@ -105,14 +120,13 @@ const SignerPage = () => {
   const isPermitSigned = !!permitSignature;
 
   useEffect(() => {
-    setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
+    // ! setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
+    console.log("is order signed: ", isOrderSigned);
+    console.log("is permit signed: ", isPermitSigned);
   }, [isOrderSigned, isPermitSigned]);
 
   const intentSignForm = (
     <>
-      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-        Sign Your Intent
-      </Typography>
       <SignIntentForm
         setSignature={setOrderSignature}
         onSign={handleSign}
@@ -124,6 +138,10 @@ const SignerPage = () => {
         _setDestChainId={setDestChainId}
         _setUserAddress={setUserAddress}
         _setFillDeadline={setFillDeadline}
+        //
+        setPermitData={setPermitData}
+        setPermitSignature={setPermitSignature}
+        markStepComplete={markStepComplete}
       />
     </>
   );
@@ -160,10 +178,19 @@ const SignerPage = () => {
     </>
   );
 
+  /*
   const formIndicator = () => {
     if (userStep == 1) return intentSignForm;
     else if (userStep == 2) return permitSignForm;
     else if (userStep == 3) return deploymentWatcherForm;
+    else return null;
+  };
+  */
+  const formIndicator = () => {
+    console.log(userStep);
+
+    if (userStep == 1) return intentSignForm;
+    else if (userStep == 2) return deploymentWatcherForm;
     else return null;
   };
 
@@ -187,7 +214,11 @@ const SignerPage = () => {
         }}
       >
         {/* Step Indicator */}
-        <StepIndicator currentStep={userStep} />
+        <StepIndicator
+          currentStep={userStep}
+          stepsCompleted={stepsCompleted}
+          switchPaging={switchPaging}
+        />
 
         {/* Content based on signing state */}
         {formIndicator()}
