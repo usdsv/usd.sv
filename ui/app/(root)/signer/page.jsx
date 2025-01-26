@@ -27,6 +27,9 @@ const SignerPage = () => {
   const [chainId, setChainId] = useState(null);
   const [destChainId, setDestChainId] = useState(null);
   const [fillDeadline, setFillDeadline] = useState(null);
+  const [estimateGas, setEstimateGas] = useState("");
+  const [estimateReward, setEstimateReward] = useState("");
+  const [recoveredAddress, setRecoveredAddress] = useState("");
 
   // Mark a step as completed
   const markStepComplete = (stepIndex) => {
@@ -123,6 +126,11 @@ const SignerPage = () => {
     // ! setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
     console.log("is order signed: ", isOrderSigned);
     console.log("is permit signed: ", isPermitSigned);
+    console.log("order signature: ", orderSignature);
+    console.log("permit signature: ", permitSignature);
+    console.log("recovered address: ", recoveredAddress);
+    console.log("estimate gas: ", estimateGas);
+    console.log("estimate reward: ", estimateReward);
   }, [isOrderSigned, isPermitSigned]);
 
   const intentSignForm = (
@@ -138,10 +146,13 @@ const SignerPage = () => {
         _setDestChainId={setDestChainId}
         _setUserAddress={setUserAddress}
         _setFillDeadline={setFillDeadline}
+        _setRecoveredAddress={setRecoveredAddress}
         //
         setPermitData={setPermitData}
         setPermitSignature={setPermitSignature}
         markStepComplete={markStepComplete}
+        setEstimateGas={setEstimateGas}
+        setEstimateReward={setEstimateReward}
       />
     </>
   );
@@ -165,17 +176,18 @@ const SignerPage = () => {
     </>
   );
   const deploymentWatcherForm = (
-    <>
-      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-        Deployment Watcher
-      </Typography>
-      <DeploymentWatcher
-        sourceChainId={chainId}
-        destChainId={destChainId}
-        ephemeralAddress={ephemeralAddress}
-        tokenAmount={amount}
-      />
-    </>
+    <DeploymentWatcher
+      sourceChainId={chainId}
+      destChainId={destChainId}
+      ephemeralAddress={ephemeralAddress}
+      tokenAmount={amount}
+      recoveredAddress={recoveredAddress}
+      orderSignature={orderSignature}
+      permitSignature={permitSignature}
+      intentOrder={intentOrder}
+      estimateGas={estimateGas}
+      estimateReward={estimateReward}
+    />
   );
 
   /*

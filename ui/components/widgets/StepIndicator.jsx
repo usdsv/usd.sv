@@ -20,7 +20,7 @@ const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
         {steps.map((step, index) => {
           const stepNum = index + 1;
           const isActive = stepNum === currentStep;
-          const isCompleted = stepsCompleted[`step${stepNum}`];
+          const isCompleted = stepsCompleted[stepNum];
 
           return (
             <Box
@@ -32,7 +32,7 @@ const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
                 px: 5,
                 cursor: "pointer",
               }}
-              onClick={() => switchPaging(stepNum)}
+              // onClick={() => switchPaging(stepNum)}
             >
               <Box
                 sx={{

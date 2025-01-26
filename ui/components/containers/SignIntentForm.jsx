@@ -38,9 +38,12 @@ const SignIntentForm = ({
   _setUserAddress,
   _setIntentOrder,
   _setFillDeadline,
+  _setRecoveredAddress,
   setPermitData,
   setPermitSignature,
   markStepComplete,
+  setEstimateGas,
+  setEstimateReward,
 }) => {
   const [chainId, setChainId] = useState("11155111");
   const [destChainId, setDestChainId] = useState("");
@@ -52,8 +55,7 @@ const SignIntentForm = ({
   const [fillDeadline, setFillDeadline] = useState("");
   const [recoveredAddress, setRecoveredAddress] = useState("");
   const [ephemeralAddress, setEphemeralAddress] = useState("");
-  const [estimateGas, setEstimateGas] = useState("");
-  const [estimateReward, setEstimateReward] = useState("");
+
   const [formError, setFormError] = useState("");
 
   const [intentOrder, setIntentOrder] = useState(null);
@@ -207,6 +209,7 @@ const SignIntentForm = ({
           _setIntentOrder({ ...intentOrder, intentAddress: computedAddress });
 
           setRecoveredAddress(recoveredAddr);
+          _setRecoveredAddress(recoveredAddr);
         } catch (err) {
           console.error("Error recovering address:", err);
         }
@@ -352,8 +355,8 @@ const SignIntentForm = ({
 
   // Fill in defaults
   const handleFillDefaults = () => {
-    setDestChainId("11155111");
-    setChainId("763373");
+    setChainId("11155111");
+    setDestChainId("357");
     setTokenAddress("0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A");
     setAmount("100");
     setNonce("1234");
@@ -392,78 +395,12 @@ const SignIntentForm = ({
         </>
       ) : (
         <>
-          {/*
-          orderSignSuccess && (
-            <Box
-              display="flex"
-              flexDirection="column"
-              sx={{ pt: 2, pb: 4, mb: 2, borderBottom: "1px solid #aaa" }}
-            >
-              <Typography
-                variant="h5"
-                component="h1"
-                sx={{
-                  flex: 2,
-                  textTransform: "uppercase",
-                  fontWeight: "bold",
-                }}
-                gutterBottom
-              >
-                Sign EIP-2612 Permit
-              </Typography>
-              <Box sx={{ my: 2, textAlign: "left" }}>
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Successfully signed the intent!
-                </Alert>
-                <Box sx={{ py: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    <strong>Signature:</strong>
-                  </Typography>
-                  <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-                    {orderSignedData}
-                  </Typography>
-                </Box>
-                {computedAddress && (
-                  <>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      sx={{ textTransform: "uppercase" }}
-                      gutterBottom
-                    >
-                      Ephemeral Address
-                    </Typography>
-                    <Typography variant="body1" fontWeight={500}>
-                      {computedAddress}
-                    </Typography>
-                  </>
-                )}
-                {recoveredAddress && (
-                  <Box sx={{ py: 1 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      <strong>Recovered Address:</strong>
-                    </Typography>
-                    <Typography variant="body2">{recoveredAddress}</Typography>
-                  </Box>
-                )}
-              </Box>
-
-              <Button
-                variant="contained"
-                sx={{ mt: 1 }}
-                onClick={() => {
-                  setSignature(orderSignedData);
-                }}
-              >
-                Sign Permit
-              </Button>
-            </Box>
-          ) */}
           {orderSignSuccess && (
             <SignPermit
               orderSignedData={orderSignedData}
               ephemeralAddress={computedAddress}
               recoveredAddress={recoveredAddress}
+              setRecoveredAddress={_setRecoveredAddress}
               setSignature={setSignature}
               amount={amount}
               chainId={chainId}

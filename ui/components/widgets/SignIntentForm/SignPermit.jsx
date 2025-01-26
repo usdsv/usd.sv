@@ -356,7 +356,7 @@ const SignPermit = ({
           >
             Sign EIP-2612 Permit
           </Typography>
-          <Alert severity="success" sx={{ mb: 2 }}>
+          <Alert severity="success" sx={{ my: 2 }}>
             Successfully signed the permit!
           </Alert>
 
