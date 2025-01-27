@@ -57,7 +57,7 @@ const Navbar = () => {
               Signer
             </Typography>
           </Link>
-          <Link href="/status" passHref>
+          <Link href="/docs" passHref>
             <Typography
               variant="body1"
               color="textPrimary"
@@ -67,7 +67,7 @@ const Navbar = () => {
                 fontWeight: "500",
               }}
             >
-              Status
+              Docs
             </Typography>
           </Link>
         </Box>
