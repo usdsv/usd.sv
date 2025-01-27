@@ -19,19 +19,20 @@ const SignPermit = ({
   orderSignedData,
   ephemeralAddress,
   recoveredAddress,
-  setRecoveredAddress,
   setOrderSignature,
   order,
   setPermitData,
   setPermitSignature,
   intentOrder,
-  _setEstimateGas,
-  _setEstimateReward,
+  setEstimateGas,
+  setEstimateReward,
   markStepComplete,
 }) => {
-  const [estimateGas, setEstimateGas] = useState("");
-  const [estimateReward, setEstimateReward] = useState("");
+  // ------------------ Local States ------------------
+  const [localEstimateGas, setLocalEstimateGas] = useState("");
+  const [localEstimateReward, setLocalEstimateReward] = useState("");
 
+  // ------------------ Destructured Order Props ------------------
   const {
     amount,
     chainId,
@@ -41,6 +42,7 @@ const SignPermit = ({
     fillDeadline,
   } = order;
 
+  // ------------------ Wagmi Hooks (signTypedData) ------------------
   const {
     signTypedData: signPermit,
     data: permitSignedData,
@@ -52,6 +54,7 @@ const SignPermit = ({
     variables: permitVariables,
   } = useSignTypedData();
 
+  // ------------------ Read Contracts ------------------
   const { data: sourceTokenNonce } = useReadContract({
     address: tokenAddress,
     abi: abis.erc20,
@@ -78,6 +81,7 @@ const SignPermit = ({
     args: [tokenAddress],
   });
 
+  // ------------------ Prepare Transaction (Source & Dest) ------------------
   const { data: preparedWriteSource } = usePrepareTransactionRequest({
     address: getContractAddress(chainId, "intentFactory"),
     abi: abis.intentFactory,
@@ -92,54 +96,38 @@ const SignPermit = ({
     args: [intentOrder, ethers.id(SALT)],
   });
 
-  const {
-    data: estimateGasSource,
-    isLoadingSource,
-    isErrorSource,
-  } = useEstimateGas({
+  // ------------------ Estimate Gas ------------------
+  const { data: estimateGasSource } = useEstimateGas({
     ...preparedWriteSource,
   });
-
-  const {
-    data: estimateGasDest,
-    isLoadingDest,
-    isErrorDest,
-  } = useEstimateGas({
+  const { data: estimateGasDest } = useEstimateGas({
     ...preparedWriteDest,
   });
 
-  const TX_FILLER_FILL = {
-    to: userAddress,
-    value: amount,
-  };
+  const TX_FILLER_FILL = { to: userAddress, value: amount };
   const { data: estimateFillGas } = useEstimateGas({ ...TX_FILLER_FILL });
 
-  const TX_FILLER_UNSCROW = {
-    to: userAddress,
-    value: amount,
-  };
+  const TX_FILLER_UNSCROW = { to: userAddress, value: amount };
   const { data: estimateUnscrowGas } = useEstimateGas({ ...TX_FILLER_UNSCROW });
 
-  const TX_FILLER_PERMIT = {
-    to: ephemeralAddress,
-    value: amount,
-  };
+  const TX_FILLER_PERMIT = { to: ephemeralAddress, value: amount };
   const { data: estimatePermitGas } = useEstimateGas({ ...TX_FILLER_PERMIT });
 
+  // ------------------ useEffects ------------------
   useEffect(() => {
     (async () => {
       if (
-        !!destTokenFee &&
-        !!estimateGasSource &&
-        !!estimateGasDest &&
-        !!estimateFillGas &&
-        !!estimateUnscrowGas &&
-        !!estimatePermitGas
+        destTokenFee &&
+        estimateGasSource &&
+        estimateGasDest &&
+        estimateFillGas &&
+        estimateUnscrowGas &&
+        estimatePermitGas
       ) {
         const reward =
           (amount * Number(destTokenFee[0])) / Number(destTokenFee[1]);
+        setLocalEstimateReward(reward);
         setEstimateReward(reward);
-        _setEstimateReward(reward);
 
         const gas =
           Number(
@@ -149,8 +137,9 @@ const SignPermit = ({
               estimateUnscrowGas +
               estimatePermitGas
           ) / Number(10 ** 9);
+
+        setLocalEstimateGas(gas);
         setEstimateGas(gas);
-        _setEstimateGas(gas);
       }
     })();
   }, [
@@ -173,8 +162,7 @@ const SignPermit = ({
             message: permitVariables.message,
             signature: permitSignedData,
           });
-
-          // !
+          // (Optional: handle `recoveredAddr` if needed)
         } catch (err) {
           console.error("Error recovering address:", err);
         }
@@ -199,6 +187,7 @@ const SignPermit = ({
     markStepComplete,
   ]);
 
+  // ------------------ Event Handler: Permit ------------------
   const handlePermit = () => {
     setOrderSignature(orderSignedData);
 
@@ -208,6 +197,7 @@ const SignPermit = ({
       chainId: chainId,
       verifyingContract: tokenAddress,
     };
+
     const permitTypes = {
       EIP712Domain: [
         { name: "name", type: "string" },
@@ -216,26 +206,11 @@ const SignPermit = ({
         { name: "verifyingContract", type: "address" },
       ],
       Permit: [
-        {
-          name: "owner",
-          type: "address",
-        },
-        {
-          name: "spender",
-          type: "address",
-        },
-        {
-          name: "value",
-          type: "uint256",
-        },
-        {
-          name: "nonce",
-          type: "uint256",
-        },
-        {
-          name: "deadline",
-          type: "uint256",
-        },
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
       ],
     };
 
@@ -255,15 +230,13 @@ const SignPermit = ({
         types: permitTypes,
         message: permitValues,
         primaryType: "Permit",
-      }).then(() => {
-        setPermitSignature(permitSignedData);
-        markStepComplete(1);
       });
     } catch (e) {
       console.error("signTypedData error: ", e);
     }
   };
 
+  // ------------------ Render JSX ------------------
   return (
     <>
       {!permitSignSuccess && (
@@ -288,6 +261,7 @@ const SignPermit = ({
             <Alert severity="success" sx={{ mb: 2 }}>
               Successfully signed the intent!
             </Alert>
+
             <Box sx={{ py: 1 }}>
               <Typography
                 variant="subtitle2"
@@ -316,12 +290,11 @@ const SignPermit = ({
               >
                 Ephemeral Address
               </Typography>
-              {ephemeralAddress && (
+              {ephemeralAddress ? (
                 <Typography variant="body2" fontWeight={500}>
                   {ephemeralAddress}
                 </Typography>
-              )}
-              {!ephemeralAddress && (
+              ) : (
                 <Typography variant="body2">
                   Computing ephemeral address...
                 </Typography>
@@ -355,7 +328,7 @@ const SignPermit = ({
               >
                 Estimated Filler Gas
               </Typography>
-              <Typography variant="body2">{estimateGas} Gwei</Typography>
+              <Typography variant="body2">{localEstimateGas} Gwei</Typography>
             </Box>
             <Box sx={{ py: 1 }}>
               <Typography
@@ -366,7 +339,9 @@ const SignPermit = ({
               >
                 Estimated Filler Reward
               </Typography>
-              <Typography variant="body2">{estimateReward} USDT</Typography>
+              <Typography variant="body2">
+                {localEstimateReward} USDT
+              </Typography>
             </Box>
           </Box>
 

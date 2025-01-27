@@ -1,24 +1,25 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Container } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import SignIntentForm from "../../../components/containers/SignIntentForm";
 import StepIndicator from "../../../components/widgets/StepIndicator";
-
-import { apiService } from "@/services/apiService";
-import { ethers } from "ethers";
-
-import { IS_TEST } from "@/config/constants";
 import DeploymentWatcher from "@/components/containers/DeploymentWatcher";
+import { useSubmitOrder } from "@/hooks/useSubmitOrder"; // custom hook
+import { useDebugLogger } from "@/hooks/useDebugLogger"; // optional
 
 const SignerPage = () => {
-  // State variables
+  // Steps & wizard state
   const [userStep, setUserStep] = useState(1);
   const [stepsCompleted, setStepsCompleted] = useState([false, false]);
+
+  // Order / signing states
   const [intentOrder, setIntentOrder] = useState(null);
   const [orderSignature, setOrderSignature] = useState(null);
   const [permitData, setPermitData] = useState(null);
   const [permitSignature, setPermitSignature] = useState(null);
+
+  // Chain info & user data
   const [userAddress, setUserAddress] = useState(null);
   const [ephemeralAddress, setEphemeralAddress] = useState(null);
   const [tokenAddress, setTokenAddress] = useState(null);
@@ -26,26 +27,27 @@ const SignerPage = () => {
   const [chainId, setChainId] = useState(null);
   const [destChainId, setDestChainId] = useState(null);
   const [fillDeadline, setFillDeadline] = useState(null);
-  const [estimateGas, setEstimateGas] = useState("");
-  const [estimateReward, setEstimateReward] = useState("");
   const [recoveredAddress, setRecoveredAddress] = useState("");
 
-  // Mark a step as completed
+  // Estimates
+  const [estimateGas, setEstimateGas] = useState("");
+  const [estimateReward, setEstimateReward] = useState("");
+
+  /**
+   * Step completion logic
+   */
   const markStepComplete = (stepIndex) => {
     setStepsCompleted((prev) => {
-      const updatedSteps = [...prev];
-      updatedSteps[stepIndex] = true;
-      return updatedSteps;
+      const updated = [...prev];
+      updated[stepIndex] = true;
+      return updated;
     });
-    switchPaging(stepIndex + 1);
+    setUserStep(stepIndex + 1);
   };
 
-  // Provide a helper function to switch pages manually
-  const switchPaging = (page) => {
-    setUserStep(page);
-  };
-
-  // Called by SignIntentForm after successful signing
+  /**
+   * Called by SignIntentForm after successful signing
+   */
   const handleSign = (sig, formData) => {
     alert(formData);
     setOrderSignature(sig);
@@ -57,122 +59,66 @@ const SignerPage = () => {
     setDestChainId(formData.destChainId);
   };
 
-  useEffect(() => {
-    (async () => {
-      if (!!orderSignature && !!permitSignature) {
-        try {
-          // console.log("Order Signature: ", orderSignature);
-          // console.log("Permit Signature: ", permitSignature);
-          // console.log("Intent Order: ", intentOrder);
-          // console.log("Permit Values: ", permitData);
+  /**
+   * Submit order automatically when everything is present
+   */
+  useSubmitOrder(orderSignature, permitSignature, intentOrder, permitData);
 
-          const orderRawbytes = ethers.AbiCoder.defaultAbiCoder().encode(
-            [
-              "address",
-              "address",
-              "uint256",
-              "uint256",
-              "uint32",
-              "uint32",
-              "bytes32",
-              "bytes",
-            ],
-            [
-              intentOrder.intentAddress, // Intent address
-              intentOrder.user, // User address
-              intentOrder.nonce, // Nonce
-              intentOrder.sourceChainId, // Source chain ID
-              intentOrder.openDeadline, // Open deadline
-              intentOrder.fillDeadline, // Fill deadline
-              intentOrder.orderDataType, // Order data type
-              intentOrder.orderData, // Order data
-            ]
-          );
-
-          const permitRawbytes = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["address", "address", "uint256", "uint256", "uint256"],
-            [
-              permitData.owner, // Owner address
-              permitData.spender, // Spender address
-              permitData.value, // Amount of token
-              permitData.nonce, // Nonce
-              permitData.deadline, // Deadline
-            ]
-          );
-
-          if (!IS_TEST) {
-            const result = await apiService.submitOrder({
-              permitsignature: permitSignature,
-              permitrawbytes: permitRawbytes,
-              ordersignature: orderSignature,
-              orderrawbytes: orderRawbytes,
-            });
-          }
-        } catch (err) {
-          console.error("Error posting signature: ", err);
-        }
-      }
-    })();
-  }, [orderSignature, permitSignature]);
-
-  // If signature is non-empty, user has signed
-  const isOrderSigned = !!orderSignature;
-  const isPermitSigned = !!permitSignature;
-
-  // Debugging
-  useEffect(() => {
-    console.log("is order signed: ", isOrderSigned);
-    console.log("is permit signed: ", isPermitSigned);
-    console.log("order signature: ", orderSignature);
-    console.log("permit signature: ", permitSignature);
-    console.log("recovered address: ", recoveredAddress);
-    console.log("estimate gas: ", estimateGas);
-    console.log("estimate reward: ", estimateReward);
-  }, [isOrderSigned, isPermitSigned]);
-
-  // Signing Page (Page 1)
-  const intentSignForm = (
-    <SignIntentForm
-      onSign={handleSign}
-      setOrderSignature={setOrderSignature}
-      _setIntentOrder={setIntentOrder}
-      _setEphemeralAddress={setEphemeralAddress}
-      _setTokenAddress={setTokenAddress}
-      _setAmount={setAmount}
-      _setChainId={setChainId}
-      _setDestChainId={setDestChainId}
-      _setUserAddress={setUserAddress}
-      _setFillDeadline={setFillDeadline}
-      _setRecoveredAddress={setRecoveredAddress}
-      setPermitData={setPermitData}
-      setPermitSignature={setPermitSignature}
-      markStepComplete={markStepComplete}
-      setEstimateGas={setEstimateGas}
-      setEstimateReward={setEstimateReward}
-    />
+  /**
+   * Debug Logs
+   */
+  useDebugLogger(
+    { label: "orderSignature", value: orderSignature },
+    { label: "permitSignature", value: permitSignature },
+    { label: "recoveredAddress", value: recoveredAddress },
+    { label: "estimateGas", value: estimateGas },
+    { label: "estimateReward", value: estimateReward }
   );
 
-  // Status Page (Page 2)
-  const deploymentWatcherForm = (
-    <DeploymentWatcher
-      sourceChainId={chainId}
-      destChainId={destChainId}
-      ephemeralAddress={ephemeralAddress}
-      tokenAmount={amount}
-      recoveredAddress={recoveredAddress}
-      orderSignature={orderSignature}
-      permitSignature={permitSignature}
-      intentOrder={intentOrder}
-      estimateGas={estimateGas}
-      estimateReward={estimateReward}
-    />
-  );
-
-  // Form indicator component
-  const formIndicator = () => {
-    if (userStep == 1) return intentSignForm;
-    else if (userStep == 2) return deploymentWatcherForm;
-    else return null;
+  /**
+   * Render logic
+   */
+  const renderForm = () => {
+    if (userStep === 1) {
+      return (
+        <SignIntentForm
+          onSign={handleSign}
+          setOrderSignature={setOrderSignature}
+          setParentIntentOrder={setIntentOrder}
+          setEphemeralAddress={setEphemeralAddress}
+          setParentTokenAddress={setTokenAddress}
+          setParentAmount={setAmount}
+          setParentChainId={setChainId}
+          setParentDestChainId={setDestChainId}
+          setParentUserAddress={setUserAddress}
+          setParentFillDeadline={setFillDeadline}
+          recoveredAddress={recoveredAddress}
+          setRecoveredAddress={setRecoveredAddress}
+          setPermitData={setPermitData}
+          setPermitSignature={setPermitSignature}
+          markStepComplete={markStepComplete}
+          setEstimateGas={setEstimateGas}
+          setEstimateReward={setEstimateReward}
+        />
+      );
+    }
+    if (userStep === 2) {
+      return (
+        <DeploymentWatcher
+          sourceChainId={chainId}
+          destChainId={destChainId}
+          ephemeralAddress={ephemeralAddress}
+          tokenAmount={amount}
+          recoveredAddress={recoveredAddress}
+          orderSignature={orderSignature}
+          permitSignature={permitSignature}
+          intentOrder={intentOrder}
+          estimateGas={estimateGas}
+          estimateReward={estimateReward}
+        />
+      );
+    }
+    return null;
   };
 
   return (
@@ -194,15 +140,12 @@ const SignerPage = () => {
           gap: 4,
         }}
       >
-        {/* Step Indicator */}
         <StepIndicator
           currentStep={userStep}
           stepsCompleted={stepsCompleted}
-          switchPaging={switchPaging}
+          switchPaging={setUserStep}
         />
-
-        {/* Content based on signing state */}
-        {formIndicator()}
+        {renderForm()}
       </Container>
     </Box>
   );

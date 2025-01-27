@@ -20,6 +20,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PendingIcon from "@mui/icons-material/Pending";
 import WarningIcon from "@mui/icons-material/Warning";
 import React, { useEffect, useState } from "react";
+
 import { abis } from "@/abi";
 import {
   getContractAddress,
@@ -42,23 +43,45 @@ const DeploymentWatcher = ({
   estimateGas,
   estimateReward,
 }) => {
+  // ------------------ Wagmi ------------------
   const { isConnected, address } = useAccount();
 
-  /**
-   * Local states to track progress
-   */
+  // ------------------ Local States ------------------
   const [sourceDeployed, setSourceDeployed] = useState(false);
   const [userTransferDone, setUserTransferDone] = useState(false);
   const [sourceDeployTx, setSourceDeployTx] = useState(null);
   const [fillerTransferDone, setFillerTransferDone] = useState(false);
   const [destinationDeployed, setDestinationDeployed] = useState(false);
   const [destDepolyTx, setDestDeployTx] = useState(null);
-
-  /**
-   * Recompute steps array whenever any relevant state changes.
-   */
   const [steps, setSteps] = useState([]);
 
+  // ------------------ Convert Chain IDs to Numbers ------------------
+  sourceChainId = parseInt(sourceChainId, 10);
+  destChainId = parseInt(destChainId, 10);
+
+  // ------------------ Read Contract: bridgeData ------------------
+  const { data: bridgeData } = useReadContract({
+    address: ephemeralAddress,
+    abi: abis.dualChainIntent,
+    functionName: "bridgeData",
+  });
+
+  // ------------------ Utility: Step Status Styles ------------------
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "ready":
+        return { backgroundColor: "#4caf50", color: "#fff" }; // Green
+      case "loading":
+        return { backgroundColor: "#ffc107", color: "#8a6d3b" }; // Yellow
+      case "error":
+        return { backgroundColor: "#f44336", color: "#fff" }; // Red
+      case "pending":
+      default:
+        return { backgroundColor: "#9e9e9e", color: "#fff" }; // Gray
+    }
+  };
+
+  // ------------------ useEffect: Update Steps Array ------------------
   useEffect(() => {
     setSteps([
       {
@@ -119,38 +142,9 @@ const DeploymentWatcher = ({
     destChainId,
   ]);
 
-  sourceChainId = parseInt(sourceChainId, 10);
-  destChainId = parseInt(destChainId, 10);
+  // ------------------ Contract Events: Watchers ------------------
 
-  /**
-   * Read Contract Data (for filler address, etc.)
-   */
-  const { data: bridgeData } = useReadContract({
-    address: ephemeralAddress,
-    abi: abis.dualChainIntent,
-    functionName: "bridgeData",
-  });
-
-  /**
-   * Utility function to style step statuses
-   */
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "ready":
-        return { backgroundColor: "#4caf50", color: "#fff" }; // Green
-      case "loading":
-        return { backgroundColor: "#ffc107", color: "#8a6d3b" }; // Yellow
-      case "error":
-        return { backgroundColor: "#f44336", color: "#fff" }; // Red
-      case "pending":
-      default:
-        return { backgroundColor: "#9e9e9e", color: "#fff" }; // Gray
-    }
-  };
-
-  /**
-   * 1) Source Intent Deploy Watcher
-   */
+  // 1) Source Intent Deploy Watcher
   try {
     useWatchContractEvent({
       address: getContractAddress(sourceChainId, "intentFactory"),
@@ -169,9 +163,7 @@ const DeploymentWatcher = ({
     console.log("Error setting Source Watcher:", e);
   }
 
-  /**
-   * 2) Destination Intent Deploy Watcher
-   */
+  // 2) Destination Intent Deploy Watcher
   try {
     useWatchContractEvent({
       address: getContractAddress(destChainId, "intentFactory"),
@@ -190,9 +182,7 @@ const DeploymentWatcher = ({
     console.log("Error setting Destination Watcher:", e);
   }
 
-  /**
-   * 3) User Transfer Watcher
-   */
+  // 3) User Transfer Watcher
   try {
     useWatchContractEvent({
       address: getToken(sourceChainId, tokenIds.usdt).address,
@@ -225,9 +215,7 @@ const DeploymentWatcher = ({
     console.log("Error setting User Transfer Watcher:", e);
   }
 
-  /**
-   * 4) Filler Transfer Watcher
-   */
+  // 4) Filler Transfer Watcher
   try {
     useWatchContractEvent({
       address: getToken(destChainId, tokenIds.usdt).address,
@@ -253,7 +241,7 @@ const DeploymentWatcher = ({
             console.log("Filler address: ", fillerAddress);
 
             if (from === fillerAddress && to === address?.toLowerCase()) {
-              // Fix: set filler transfer done (not userTransferDone)
+              // Fix: set filler transfer done
               setFillerTransferDone(true);
             }
           });
@@ -264,6 +252,7 @@ const DeploymentWatcher = ({
     console.log("Error setting Filler Transfer Watcher:", e);
   }
 
+  // ------------------ Render ------------------
   return (
     <Container
       maxWidth="md"

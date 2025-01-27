@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { ethers } from "ethers";
+
 import { SALT } from "@/config/constants";
 import { abis } from "@/abi";
 import { getContractAddress, getToken, tokenIds } from "@/config/networks";
@@ -33,21 +34,23 @@ import SignPermit from "../../components/widgets/SignIntentForm/SignPermit";
 const SignIntentForm = ({
   onSign,
   setOrderSignature,
-  _setTokenAddress,
-  _setAmount,
-  _setChainId,
-  _setDestChainId,
-  _setEphemeralAddress,
-  _setUserAddress,
-  _setIntentOrder,
-  _setFillDeadline,
-  _setRecoveredAddress,
+  setParentTokenAddress,
+  setParentAmount,
+  setParentChainId,
+  setParentDestChainId,
+  setParentUserAddress,
+  setParentFillDeadline,
+  setEphemeralAddress,
+  setParentIntentOrder,
+  recoveredAddress,
+  setRecoveredAddress,
   setPermitData,
   setPermitSignature,
   markStepComplete,
   setEstimateGas,
   setEstimateReward,
 }) => {
+  // ------------------ State Variables ------------------
   const [chainId, setChainId] = useState("11155111");
   const [destChainId, setDestChainId] = useState("");
   const [nonce, setNonce] = useState("");
@@ -56,22 +59,25 @@ const SignIntentForm = ({
   const [deadlinePreference, setDeadlinePreference] = useState("Auto");
   const [openDeadline, setOpenDeadline] = useState("");
   const [fillDeadline, setFillDeadline] = useState("");
-  const [recoveredAddress, setRecoveredAddress] = useState("");
-  const [ephemeralAddress, setEphemeralAddress] = useState("");
   const [formError, setFormError] = useState("");
   const [intentOrder, setIntentOrder] = useState(null);
   const [expanded, setExpanded] = useState(true);
+
+  // ------------------ Wagmi Hooks ------------------
   const { isConnected, address, chain: currentChain } = useAccount();
   const { chains, switchChain, isLoading, error } = useSwitchChain();
 
+  // ------------------ Router ------------------
   const router = useRouter();
 
+  // ------------------ Token Map ------------------
   const tokenMap = {
     USDT: "0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A",
     WBTC: "0xc580C2C0005798751cd0c221292667deeb991157",
     WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
   };
 
+  // ------------------ Handlers ------------------
   const handleSourceChainChange = async (event) => {
     const selectedChainId = parseInt(event.target.value, 10);
     setChainId(selectedChainId);
@@ -117,47 +123,35 @@ const SignIntentForm = ({
 
   const handleAmountChange = (e) => {
     const input = e.target.value;
-
-    // Ensure the input is valid and conforms to the decimal precision
     const regex = new RegExp(`^\\d*(\\.\\d{0,${decimalPrecision}})?$`);
     if (regex.test(input)) {
       setAmount(input);
     }
   };
 
-  // Map preferences to deadlines
   const handleDeadlinePreferenceChange = (preference) => {
     setDeadlinePreference(preference);
-
     const currentTimeStamp = Math.floor(Date.now() / 1000);
 
     switch (preference) {
       case "Fast":
-        // Fast: <1 min -- highest fee % + Fixed gas price
-        setOpenDeadline(currentTimeStamp + 60);
-        // 1 minute
-        setFillDeadline(currentTimeStamp + 3600 * 1);
-        // 1 hour
+        setOpenDeadline(currentTimeStamp + 60); // 1 minute
+        setFillDeadline(currentTimeStamp + 3600 * 1); // 1 hour
         break;
       case "Auto":
-        // Auto: <5 min -- modest fee 0.01% + Fixed gas price
-        setOpenDeadline(currentTimeStamp + 300);
-        // 5 minutes
-        setFillDeadline(currentTimeStamp + 3600 * 6);
-        // 6 hours
+        setOpenDeadline(currentTimeStamp + 300); // 5 minutes
+        setFillDeadline(currentTimeStamp + 3600 * 6); // 6 hours
         break;
       case "Economy":
-        // Economy: 5-10 min -- cheapest fee % + Fixed gas price
-        setOpenDeadline(currentTimeStamp + 600);
-        // 10 minutes
-        setFillDeadline(currentTimeStamp + 3600 * 24);
-        // 24 hours
+        setOpenDeadline(currentTimeStamp + 600); // 10 minutes
+        setFillDeadline(currentTimeStamp + 3600 * 24); // 24 hours
         break;
       default:
         break;
     }
   };
 
+  // ------------------ Sign Typed Data (Order) ------------------
   const {
     signTypedData: signOrder,
     data: orderSignedData,
@@ -176,13 +170,14 @@ const SignIntentForm = ({
         amount,
         openDeadline,
         fillDeadline,
-        ephemeralAddress,
+        ephemeralAddress: computedAddress,
         address,
       };
       onSign?.(data, formData);
     },
   });
 
+  // ------------------ Read Contract (Ephemeral Address) ------------------
   const { data: computedAddress } = useReadContract({
     address: getContractAddress(chainId, "intentFactory"),
     abi: abis.intentFactory,
@@ -193,6 +188,7 @@ const SignIntentForm = ({
     },
   });
 
+  // ------------------ Accordion Change ------------------
   const handleAccordionChange = (event, isExpanded) => {
     if (orderSignedData) {
       setExpanded(isExpanded);
@@ -200,6 +196,7 @@ const SignIntentForm = ({
     }
   };
 
+  // ------------------ useEffects ------------------
   useEffect(() => {
     if (!orderSignedData) {
       setExpanded(true);
@@ -221,17 +218,19 @@ const SignIntentForm = ({
             signature: orderSignedData,
           });
 
-          _setEphemeralAddress(computedAddress);
-          _setTokenAddress(tokenAddress);
-          _setAmount(amount);
-          _setChainId(chainId);
-          _setDestChainId(destChainId);
-          _setUserAddress(address);
-          -_setFillDeadline(fillDeadline);
-          _setIntentOrder({ ...intentOrder, intentAddress: computedAddress });
+          setEphemeralAddress(computedAddress);
+          setParentTokenAddress(tokenAddress);
+          setParentAmount(amount);
+          setParentChainId(chainId);
+          setParentDestChainId(destChainId);
+          setParentUserAddress(address);
+          setParentFillDeadline(fillDeadline);
+          setParentIntentOrder({
+            ...intentOrder,
+            intentAddress: computedAddress,
+          });
 
           setRecoveredAddress(recoveredAddr);
-          _setRecoveredAddress(recoveredAddr);
         } catch (err) {
           console.error("Error recovering address:", err);
         }
@@ -239,6 +238,7 @@ const SignIntentForm = ({
     })();
   }, [orderSignedData, orderVariables?.message, computedAddress]);
 
+  // ------------------ Sign Order ------------------
   const handleSignOrder = async () => {
     setFormError("");
 
@@ -369,16 +369,15 @@ const SignIntentForm = ({
     }
   };
 
-  // Decide if we should show the success UI or the form
+  // ------------------ Another useEffect (Order Signed) ------------------
   const orderSignSuccess = orderIsSuccess && orderSignedData;
-
   useEffect(() => {
     if (orderSignSuccess) {
       setExpanded(false);
     }
   }, [orderSignSuccess]);
 
-  // Fill in defaults
+  // ------------------ Fill Defaults & Reset ------------------
   const handleFillDefaults = async () => {
     setChainId("11155111");
     setDestChainId("357");
@@ -398,6 +397,7 @@ const SignIntentForm = ({
     setFormError("");
   };
 
+  // ------------------ Render ------------------
   return (
     <Container
       maxWidth="md"
@@ -424,7 +424,6 @@ const SignIntentForm = ({
               orderSignedData={orderSignedData}
               ephemeralAddress={computedAddress}
               recoveredAddress={recoveredAddress}
-              setRecoveredAddress={_setRecoveredAddress}
               setOrderSignature={setOrderSignature}
               order={{
                 amount,
@@ -437,8 +436,8 @@ const SignIntentForm = ({
               setPermitData={setPermitData}
               setPermitSignature={setPermitSignature}
               intentOrder={intentOrder}
-              _setEstimateGas={setEstimateGas}
-              _setEstimateReward={setEstimateReward}
+              setEstimateGas={setEstimateGas}
+              setEstimateReward={setEstimateReward}
               markStepComplete={markStepComplete}
             />
           )}
