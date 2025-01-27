@@ -291,6 +291,9 @@ const DeploymentWatcher = ({
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
+          <Alert severity="success" sx={{ my: 2 }}>
+            Successfully signed the permit!
+          </Alert>
           <Box sx={{ py: 1 }}>
             <Typography
               variant="subtitle2"

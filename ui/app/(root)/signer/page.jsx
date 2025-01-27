@@ -121,7 +121,6 @@ const SignerPage = () => {
 
   // Debugging
   useEffect(() => {
-    // ! setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
     console.log("is order signed: ", isOrderSigned);
     console.log("is permit signed: ", isPermitSigned);
     console.log("order signature: ", orderSignature);
@@ -131,30 +130,29 @@ const SignerPage = () => {
     console.log("estimate reward: ", estimateReward);
   }, [isOrderSigned, isPermitSigned]);
 
+  // Signing Page (Page 1)
   const intentSignForm = (
-    <>
-      <SignIntentForm
-        setSignature={setOrderSignature}
-        onSign={handleSign}
-        _setIntentOrder={setIntentOrder}
-        _setEphemeralAddress={setEphemeralAddress}
-        _setTokenAddress={setTokenAddress}
-        _setAmount={setAmount}
-        _setChainId={setChainId}
-        _setDestChainId={setDestChainId}
-        _setUserAddress={setUserAddress}
-        _setFillDeadline={setFillDeadline}
-        _setRecoveredAddress={setRecoveredAddress}
-        //
-        setPermitData={setPermitData}
-        setPermitSignature={setPermitSignature}
-        markStepComplete={markStepComplete}
-        setEstimateGas={setEstimateGas}
-        setEstimateReward={setEstimateReward}
-      />
-    </>
+    <SignIntentForm
+      onSign={handleSign}
+      setOrderSignature={setOrderSignature}
+      _setIntentOrder={setIntentOrder}
+      _setEphemeralAddress={setEphemeralAddress}
+      _setTokenAddress={setTokenAddress}
+      _setAmount={setAmount}
+      _setChainId={setChainId}
+      _setDestChainId={setDestChainId}
+      _setUserAddress={setUserAddress}
+      _setFillDeadline={setFillDeadline}
+      _setRecoveredAddress={setRecoveredAddress}
+      setPermitData={setPermitData}
+      setPermitSignature={setPermitSignature}
+      markStepComplete={markStepComplete}
+      setEstimateGas={setEstimateGas}
+      setEstimateReward={setEstimateReward}
+    />
   );
 
+  // Status Page (Page 2)
   const deploymentWatcherForm = (
     <DeploymentWatcher
       sourceChainId={chainId}
@@ -170,6 +168,7 @@ const SignerPage = () => {
     />
   );
 
+  // Form indicator component
   const formIndicator = () => {
     if (userStep == 1) return intentSignForm;
     else if (userStep == 2) return deploymentWatcherForm;

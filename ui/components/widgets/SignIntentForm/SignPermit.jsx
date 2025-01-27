@@ -20,7 +20,7 @@ const SignPermit = ({
   ephemeralAddress,
   recoveredAddress,
   setRecoveredAddress,
-  setSignature,
+  setOrderSignature,
   order,
   setPermitData,
   setPermitSignature,
@@ -184,8 +184,23 @@ const SignPermit = ({
 
   const permitSignSuccess = permitIsSuccess && permitSignedData;
 
+  useEffect(() => {
+    if (permitSignSuccess) {
+      setPermitSignature(permitSignedData);
+      setPermitData(permitVariables?.message);
+      markStepComplete(1);
+    }
+  }, [
+    permitSignSuccess,
+    permitSignedData,
+    permitVariables?.message,
+    setPermitSignature,
+    setPermitData,
+    markStepComplete,
+  ]);
+
   const handlePermit = () => {
-    setSignature(orderSignedData);
+    setOrderSignature(orderSignedData);
 
     const permitDomain = {
       name: sourceTokenName,
@@ -240,6 +255,9 @@ const SignPermit = ({
         types: permitTypes,
         message: permitValues,
         primaryType: "Permit",
+      }).then(() => {
+        setPermitSignature(permitSignedData);
+        markStepComplete(1);
       });
     } catch (e) {
       console.error("signTypedData error: ", e);
@@ -361,40 +379,6 @@ const SignPermit = ({
             }
           >
             Sign Permit
-          </Button>
-        </Box>
-      )}
-      {permitSignSuccess && (
-        <Box
-          display="flex"
-          flexDirection="column"
-          sx={{ pt: 2, pb: 4, mb: 2, borderBottom: "1px solid #aaa" }}
-        >
-          <Typography
-            variant="h5"
-            component="h1"
-            sx={{
-              flex: 2,
-              textTransform: "uppercase",
-              fontWeight: "bold",
-            }}
-            gutterBottom
-          >
-            Sign EIP-2612 Permit
-          </Typography>
-          <Alert severity="success" sx={{ my: 2 }}>
-            Successfully signed the permit!
-          </Alert>
-
-          <Button
-            variant="contained"
-            sx={{ mt: 1 }}
-            onClick={() => {
-              setPermitSignature(permitSignedData);
-              markStepComplete(1);
-            }}
-          >
-            See Status
           </Button>
         </Box>
       )}

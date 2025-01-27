@@ -32,7 +32,7 @@ import SignPermit from "../../components/widgets/SignIntentForm/SignPermit";
 
 const SignIntentForm = ({
   onSign,
-  setSignature,
+  setOrderSignature,
   _setTokenAddress,
   _setAmount,
   _setChainId,
@@ -425,7 +425,7 @@ const SignIntentForm = ({
               ephemeralAddress={computedAddress}
               recoveredAddress={recoveredAddress}
               setRecoveredAddress={_setRecoveredAddress}
-              setSignature={setSignature}
+              setOrderSignature={setOrderSignature}
               order={{
                 amount,
                 chainId,
