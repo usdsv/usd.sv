@@ -30,9 +30,7 @@ const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
                 display: "flex",
                 alignItems: "center",
                 px: 5,
-                cursor: "pointer",
               }}
-              // onClick={() => switchPaging(stepNum)}
             >
               <Box
                 sx={{
@@ -45,7 +43,7 @@ const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
                   backgroundColor: isActive
                     ? "#f7931a"
                     : isCompleted
-                    ? "#1d6bfd"
+                    ? "#f7931a"
                     : "#e9ecef",
                   color: isActive || isCompleted ? "#fff" : "#6c757d",
                   fontWeight: "bold",
@@ -62,8 +60,8 @@ const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
                   color: isActive
                     ? "#f7931a"
                     : isCompleted
-                    ? "#1d6bfd"
-                    : "#6c757d",
+                    ? "#f7931a"
+                    : "#e9ecef",
                   fontSize: isActive ? "1.2rem" : "1rem",
                   textTransform: "uppercase",
                   letterSpacing: 1,

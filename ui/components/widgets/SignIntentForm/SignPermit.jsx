@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { Box, Typography, Alert, Button } from "@mui/material";
 import { recoverTypedDataAddress } from "viem";
@@ -13,26 +13,34 @@ import {
 import { SALT } from "@/config/constants";
 import { abis } from "@/abi";
 import { getContractAddress } from "@/config/networks";
+import { estimateFee } from "viem/zksync";
 
 const SignPermit = ({
   orderSignedData,
   ephemeralAddress,
   recoveredAddress,
+  setRecoveredAddress,
   setSignature,
-  //
-  amount,
-  chainId,
-  destChainId,
-  tokenAddress,
-  userAddress,
-  fillDeadline,
+  order,
   setPermitData,
   setPermitSignature,
   intentOrder,
-  setEstimateGas,
-  setEstimateReward,
+  _setEstimateGas,
+  _setEstimateReward,
   markStepComplete,
 }) => {
+  const [estimateGas, setEstimateGas] = useState("");
+  const [estimateReward, setEstimateReward] = useState("");
+
+  const {
+    amount,
+    chainId,
+    destChainId,
+    tokenAddress,
+    userAddress,
+    fillDeadline,
+  } = order;
+
   const {
     signTypedData: signPermit,
     data: permitSignedData,
@@ -118,8 +126,6 @@ const SignPermit = ({
   };
   const { data: estimatePermitGas } = useEstimateGas({ ...TX_FILLER_PERMIT });
 
-  // =================================================================
-
   useEffect(() => {
     (async () => {
       if (
@@ -130,18 +136,21 @@ const SignPermit = ({
         !!estimateUnscrowGas &&
         !!estimatePermitGas
       ) {
-        setEstimateReward(
-          (amount * Number(destTokenFee[0])) / Number(destTokenFee[1])
-        );
-        setEstimateGas(
+        const reward =
+          (amount * Number(destTokenFee[0])) / Number(destTokenFee[1]);
+        setEstimateReward(reward);
+        _setEstimateReward(reward);
+
+        const gas =
           Number(
             estimateGasSource +
               estimateGasDest +
               estimateFillGas +
               estimateUnscrowGas +
               estimatePermitGas
-          ) / Number(10 ** 9)
-        );
+          ) / Number(10 ** 9);
+        setEstimateGas(gas);
+        _setEstimateGas(gas);
       }
     })();
   }, [
@@ -166,10 +175,6 @@ const SignPermit = ({
           });
 
           // !
-          console.log("PermitSign: ", ethers.Signature.from(permitSignedData));
-          console.log(recoveredAddr);
-          console.log(recoveredAddress);
-          // setRecoveredAddress(recoveredAddr);
         } catch (err) {
           console.error("Error recovering address:", err);
         }
@@ -218,7 +223,7 @@ const SignPermit = ({
         },
       ],
     };
-    const currentTimeStamp = Math.floor(Date.now() / 1000);
+
     const permitValues = {
       owner: userAddress,
       spender: ephemeralAddress,
@@ -228,8 +233,6 @@ const SignPermit = ({
     };
 
     setPermitData(permitValues);
-
-    console.log("PermitValues: ", permitValues);
 
     try {
       signPermit({
@@ -252,7 +255,7 @@ const SignPermit = ({
           sx={{ pt: 2, pb: 4, mb: 2, borderBottom: "1px solid #aaa" }}
         >
           <Typography
-            variant="h5"
+            variant="h4"
             component="h1"
             sx={{
               flex: 2,
@@ -275,7 +278,7 @@ const SignPermit = ({
                 fontWeight={500}
                 gutterBottom
               >
-                Signature
+                Order Signature
               </Typography>
               <Typography
                 variant="body2"
@@ -324,6 +327,29 @@ const SignPermit = ({
                 </Typography>
               )}
             </Box>
+
+            <Box sx={{ py: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ textTransform: "uppercase" }}
+                gutterBottom
+              >
+                Estimated Filler Gas
+              </Typography>
+              <Typography variant="body2">{estimateGas} Gwei</Typography>
+            </Box>
+            <Box sx={{ py: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ textTransform: "uppercase" }}
+                gutterBottom
+              >
+                Estimated Filler Reward
+              </Typography>
+              <Typography variant="body2">{estimateReward} USDT</Typography>
+            </Box>
           </Box>
 
           <Button
@@ -332,7 +358,7 @@ const SignPermit = ({
             onClick={handlePermit}
             disabled={
               !(orderSignedData && ephemeralAddress && recoveredAddress)
-            } // Enable only if all conditions are met
+            }
           >
             Sign Permit
           </Button>
@@ -364,11 +390,7 @@ const SignPermit = ({
             variant="contained"
             sx={{ mt: 1 }}
             onClick={() => {
-              console.log("BEFORE");
-              console.log(permitSignedData);
               setPermitSignature(permitSignedData);
-              console.log("AFTER");
-              console.log(permitSignedData);
               markStepComplete(1);
             }}
           >

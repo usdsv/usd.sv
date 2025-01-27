@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Container } from "@mui/material";
 import SignIntentForm from "../../../components/containers/SignIntentForm";
-import SignPermitForm from "../../../components/containers/SignPermitForm";
 import StepIndicator from "../../../components/widgets/StepIndicator";
 
 import { apiService } from "@/services/apiService";
@@ -35,10 +34,10 @@ const SignerPage = () => {
   const markStepComplete = (stepIndex) => {
     setStepsCompleted((prev) => {
       const updatedSteps = [...prev];
-      updatedSteps[stepIndex] = true; // Update the specific step index
+      updatedSteps[stepIndex] = true;
       return updatedSteps;
     });
-    switchPaging(stepIndex + 1); // Call your function with the step index
+    switchPaging(stepIndex + 1);
   };
 
   // Provide a helper function to switch pages manually
@@ -108,8 +107,6 @@ const SignerPage = () => {
               ordersignature: orderSignature,
               orderrawbytes: orderRawbytes,
             });
-
-            console.log(result);
           }
         } catch (err) {
           console.error("Error posting signature: ", err);
@@ -122,6 +119,7 @@ const SignerPage = () => {
   const isOrderSigned = !!orderSignature;
   const isPermitSigned = !!permitSignature;
 
+  // Debugging
   useEffect(() => {
     // ! setUserStep(!!isOrderSigned ? (!!isPermitSigned ? 3 : 2) : 1);
     console.log("is order signed: ", isOrderSigned);
@@ -156,25 +154,7 @@ const SignerPage = () => {
       />
     </>
   );
-  const permitSignForm = (
-    <>
-      <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-        Sign Permit
-      </Typography>
-      <SignPermitForm
-        intentOrder={intentOrder}
-        ephemeralAddress={ephemeralAddress}
-        userAddress={userAddress}
-        tokenAddress={tokenAddress}
-        amount={amount}
-        chainId={chainId}
-        destChainId={destChainId}
-        fillDeadline={fillDeadline}
-        _setPermitData={setPermitData}
-        _setSignature={setPermitSignature}
-      />
-    </>
-  );
+
   const deploymentWatcherForm = (
     <DeploymentWatcher
       sourceChainId={chainId}
@@ -190,17 +170,7 @@ const SignerPage = () => {
     />
   );
 
-  /*
   const formIndicator = () => {
-    if (userStep == 1) return intentSignForm;
-    else if (userStep == 2) return permitSignForm;
-    else if (userStep == 3) return deploymentWatcherForm;
-    else return null;
-  };
-  */
-  const formIndicator = () => {
-    console.log(userStep);
-
     if (userStep == 1) return intentSignForm;
     else if (userStep == 2) return deploymentWatcherForm;
     else return null;

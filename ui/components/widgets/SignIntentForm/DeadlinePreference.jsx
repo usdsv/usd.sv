@@ -3,7 +3,7 @@ import { Container, TextField, MenuItem, Typography, Box } from "@mui/material";
 
 const DeadlinePreference = ({
   deadlinePreference,
-  setDeadlinePreference,
+  orderSignedData,
   openDeadline,
   setOpenDeadline,
   fillDeadline,
@@ -24,6 +24,7 @@ const DeadlinePreference = ({
         onChange={(e) => handleDeadlinePreferenceChange(e.target.value)}
         fullWidth
         margin="normal"
+        disabled={orderSignedData}
       >
         <MenuItem value="Fast">Fast (&lt;1 min, highest fee)</MenuItem>
         <MenuItem value="Auto">Auto (&lt;5 min, modest fee)</MenuItem>

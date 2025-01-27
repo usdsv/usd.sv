@@ -18,9 +18,12 @@ import {
   Button,
   Alert,
   MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { ethers } from "ethers";
-
 import { SALT } from "@/config/constants";
 import { abis } from "@/abi";
 import { getContractAddress, getToken, tokenIds } from "@/config/networks";
@@ -55,11 +58,9 @@ const SignIntentForm = ({
   const [fillDeadline, setFillDeadline] = useState("");
   const [recoveredAddress, setRecoveredAddress] = useState("");
   const [ephemeralAddress, setEphemeralAddress] = useState("");
-
   const [formError, setFormError] = useState("");
-
   const [intentOrder, setIntentOrder] = useState(null);
-
+  const [expanded, setExpanded] = useState(true);
   const { isConnected, address, chain: currentChain } = useAccount();
   const { chains, switchChain, isLoading, error } = useSwitchChain();
 
@@ -102,12 +103,14 @@ const SignIntentForm = ({
     if (address === tokenMap.USDT) return 2;
     if (address === tokenMap.WBTC) return 8;
     if (address === tokenMap.WETH) return 9;
-    return 18; // Default ERC-20 token precision
+    return 18;
+    // Default ERC-20 token precision
   };
 
   const handleTokenChange = (e) => {
     setTokenAddress(e.target.value);
-    setAmount(""); // Reset the amount when the token changes
+    setAmount("");
+    // Reset the amount when the token changes
   };
 
   const decimalPrecision = getDecimalPrecision(tokenAddress);
@@ -131,18 +134,24 @@ const SignIntentForm = ({
     switch (preference) {
       case "Fast":
         // Fast: <1 min -- highest fee % + Fixed gas price
-        setOpenDeadline(currentTimeStamp + 60); // 1 minute
-        setFillDeadline(currentTimeStamp + 3600 * 1); // 1 hour
+        setOpenDeadline(currentTimeStamp + 60);
+        // 1 minute
+        setFillDeadline(currentTimeStamp + 3600 * 1);
+        // 1 hour
         break;
       case "Auto":
         // Auto: <5 min -- modest fee 0.01% + Fixed gas price
-        setOpenDeadline(currentTimeStamp + 300); // 5 minutes
-        setFillDeadline(currentTimeStamp + 3600 * 6); // 6 hours
+        setOpenDeadline(currentTimeStamp + 300);
+        // 5 minutes
+        setFillDeadline(currentTimeStamp + 3600 * 6);
+        // 6 hours
         break;
       case "Economy":
         // Economy: 5-10 min -- cheapest fee % + Fixed gas price
-        setOpenDeadline(currentTimeStamp + 600); // 10 minutes
-        setFillDeadline(currentTimeStamp + 3600 * 24); // 24 hours
+        setOpenDeadline(currentTimeStamp + 600);
+        // 10 minutes
+        setFillDeadline(currentTimeStamp + 3600 * 24);
+        // 24 hours
         break;
       default:
         break;
@@ -183,6 +192,19 @@ const SignIntentForm = ({
       enabled: !!intentOrder,
     },
   });
+
+  const handleAccordionChange = (event, isExpanded) => {
+    if (orderSignedData) {
+      setExpanded(isExpanded);
+      // Allow collapsing only if orderSignedData is true
+    }
+  };
+
+  useEffect(() => {
+    if (!orderSignedData) {
+      setExpanded(true);
+    }
+  }, [orderSignedData]);
 
   useEffect(() => {
     (async () => {
@@ -237,16 +259,13 @@ const SignIntentForm = ({
     const parsedFillDeadline = parseInt(fillDeadline, 10);
     const parsedAmount = parseInt(amount);
 
-    console.log(parsedChainId);
-    console.log(parsedDestChainId);
-
     if (isNaN(parsedChainId) || parsedChainId <= 0) {
       setFormError("Please select a source chain.");
       return;
     }
 
     if (
-      isNaN(parsedChainId) ||
+      isNaN(parsedDestChainId) ||
       parsedChainId <= 0 ||
       parsedChainId === parsedDestChainId
     ) {
@@ -304,24 +323,24 @@ const SignIntentForm = ({
       user: address,
       nonce: parsedNonce,
       sourceChainId: parsedChainId,
-      openDeadline: parsedOpenDeadline, // calculate manually
-      fillDeadline: parsedFillDeadline, // calculate manually
+      openDeadline: parsedOpenDeadline,
+      // calculate manually
+      fillDeadline: parsedFillDeadline,
+      // calculate manually
       orderDataType: keccak256(toUtf8Bytes("BRIDGE_TRANSFER_ORDER")),
       orderData: bridgeData,
     };
 
     setIntentOrder(order);
-    console.log("Order: ", order);
 
     orderReset();
     try {
-      // signMessage({ message: orderMessage });
       signOrder({
         domain: {
           name: "SignOrder",
           version: "1",
-          chainId: chainId, // Replace with actual chain ID
-          verifyingContract: getContractAddress(chainId, "intentFactory"), // Replace with your contract address
+          chainId: chainId,
+          verifyingContract: getContractAddress(chainId, "intentFactory"),
         },
         types: {
           EIP712Domain: [
@@ -353,8 +372,14 @@ const SignIntentForm = ({
   // Decide if we should show the success UI or the form
   const orderSignSuccess = orderIsSuccess && orderSignedData;
 
+  useEffect(() => {
+    if (orderSignSuccess) {
+      setExpanded(false);
+    }
+  }, [orderSignSuccess]);
+
   // Fill in defaults
-  const handleFillDefaults = () => {
+  const handleFillDefaults = async () => {
     setChainId("11155111");
     setDestChainId("357");
     setTokenAddress("0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A");
@@ -380,7 +405,6 @@ const SignIntentForm = ({
         border: "1px solid #ccc",
         borderRadius: 2,
         p: 3,
-        // mx: "auto",
         textAlign: "left",
       }}
     >
@@ -402,172 +426,203 @@ const SignIntentForm = ({
               recoveredAddress={recoveredAddress}
               setRecoveredAddress={_setRecoveredAddress}
               setSignature={setSignature}
-              amount={amount}
-              chainId={chainId}
-              destChainId={destChainId}
-              tokenAddress={tokenAddress}
-              userAddress={address}
-              fillDeadline={fillDeadline}
+              order={{
+                amount,
+                chainId,
+                destChainId,
+                tokenAddress,
+                userAddress: address,
+                fillDeadline,
+              }}
               setPermitData={setPermitData}
               setPermitSignature={setPermitSignature}
               intentOrder={intentOrder}
-              setEstimateGas={setEstimateGas}
-              setEstimateReward={setEstimateReward}
+              _setEstimateGas={setEstimateGas}
+              _setEstimateReward={setEstimateReward}
               markStepComplete={markStepComplete}
             />
           )}
 
-          <Box
-            display="flex"
-            justifyContent="space-around"
-            alignItems="flex-end"
-            sx={{ py: 1 }}
+          <Accordion
+            expanded={expanded}
+            onChange={handleAccordionChange}
+            sx={{
+              boxShadow: "none",
+              border: "none",
+              "&:before": {
+                display: "none",
+              },
+              cursor: "default",
+            }}
           >
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{
-                flex: 2,
-                textTransform: "uppercase",
-                fontWeight: "bold",
-              }}
-              gutterBottom
+            <AccordionSummary
+              component={orderSignedData ? "button" : "div"}
+              expandIcon={orderSignedData ? <ExpandMoreIcon /> : null}
+              sx={{ cursor: "default" }}
             >
-              Sign Intent
-            </Typography>
-
-            {!orderSignedData && (
               <Box
                 display="flex"
-                justifyContent="space-between"
-                sx={{ gap: 1 }}
-                mt={2}
-                mb={2}
+                justifyContent="space-around"
+                alignItems="flex-end"
+                sx={{ py: 1, width: "100%", cursor: "default" }}
               >
-                <Button variant="outlined" onClick={handleFillDefaults} sx={{}}>
-                  Demo
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={handleResetInputs}
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{
+                    flex: 2,
+                    textTransform: "uppercase",
+                    fontWeight: "bold",
+                  }}
+                  gutterBottom
                 >
-                  Reset
+                  {orderSignedData ? "Signed Intent" : "Sign Intent"}
+                </Typography>
+
+                {!orderSignedData && (
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    sx={{ gap: 1 }}
+                    mt={2}
+                    mb={2}
+                  >
+                    <Button
+                      variant="outlined"
+                      onClick={handleFillDefaults}
+                      sx={{}}
+                    >
+                      Demo
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={handleResetInputs}
+                    >
+                      Reset
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              {formError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {formError}
+                </Alert>
+              )}
+
+              {orderIsError && !formError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  <strong>Error signing message:</strong> {orderError?.message}
+                </Alert>
+              )}
+              <Box>
+                <TextField
+                  select
+                  label="Source Chain ID"
+                  value={currentChain?.id}
+                  onChange={handleSourceChainChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={isLoading || orderSignedData}
+                  sx={{}}
+                >
+                  {chains.map((chain) => (
+                    <MenuItem key={chain.id} value={chain.id}>
+                      {chain.name} ({chain.id})
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  select
+                  label="Destination Chain ID"
+                  value={destChainId}
+                  onChange={handleDestChainChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={isLoading || orderSignedData}
+                  sx={{}}
+                >
+                  {chains.map(
+                    (chain) =>
+                      currentChain?.id !== chain.id && (
+                        <MenuItem key={chain.id} value={chain.id}>
+                          {chain.name} ({chain.id})
+                        </MenuItem>
+                      )
+                  )}
+                </TextField>
+
+                <TextField
+                  select
+                  label="Token"
+                  value={tokenAddress}
+                  onChange={handleTokenChange}
+                  fullWidth
+                  margin="normal"
+                  disabled={isLoading || orderSignedData}
+                >
+                  {Object.entries(tokenMap).map(([token, address]) => (
+                    <MenuItem key={token} value={address}>
+                      {token} ({address})
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                <TextField
+                  label={`Amount (${decimalPrecision} decimals max)`}
+                  value={amount}
+                  onChange={handleAmountChange}
+                  placeholder={`Enter amount (${decimalPrecision} decimals max)`}
+                  fullWidth
+                  margin="normal"
+                  disabled={!tokenAddress || isLoading || orderSignedData}
+                />
+
+                <TextField
+                  type="number"
+                  label="Nonce"
+                  value={nonce}
+                  onChange={(e) => setNonce(e.target.value)}
+                  placeholder="e.g. 1234"
+                  fullWidth
+                  margin="normal"
+                  disabled={isLoading || orderSignedData}
+                />
+
+                <DeadlinePreference
+                  deadlinePreference={deadlinePreference}
+                  orderSignedData={orderSignedData}
+                  openDeadline={openDeadline}
+                  setOpenDeadline={setOpenDeadline}
+                  fillDeadline={fillDeadline}
+                  setFillDeadline={setFillDeadline}
+                  handleDeadlinePreferenceChange={
+                    handleDeadlinePreferenceChange
+                  }
+                />
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{
+                    backgroundColor: "#D87068",
+                    "&:hover": { backgroundColor: "#c76058" },
+                  }}
+                  onClick={handleSignOrder}
+                  disabled={orderIsLoading || orderSignedData}
+                >
+                  {orderIsLoading
+                    ? "Signing..."
+                    : orderSignedData
+                    ? "Already Signed"
+                    : "Approve Order"}
                 </Button>
               </Box>
-            )}
-          </Box>
-
-          {formError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {formError}
-            </Alert>
-          )}
-
-          {orderIsError && !formError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <strong>Error signing message:</strong> {orderError?.message}
-            </Alert>
-          )}
-
-          <TextField
-            select
-            label="Source Chain ID"
-            value={currentChain?.id}
-            onChange={handleSourceChainChange}
-            fullWidth
-            margin="normal"
-            disabled={isLoading} // Disable while switching network
-            sx={{}}
-          >
-            {chains.map((chain) => (
-              <MenuItem key={chain.id} value={chain.id}>
-                {chain.name} ({chain.id})
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            select
-            label="Destination Chain ID"
-            value={destChainId}
-            onChange={handleDestChainChange}
-            fullWidth
-            margin="normal"
-            sx={{}}
-          >
-            {chains.map(
-              (chain) =>
-                currentChain?.id !== chain.id && (
-                  <MenuItem key={chain.id} value={chain.id}>
-                    {chain.name} ({chain.id})
-                  </MenuItem>
-                )
-            )}
-          </TextField>
-
-          <TextField
-            select
-            label="Token"
-            value={tokenAddress}
-            onChange={handleTokenChange}
-            fullWidth
-            margin="normal"
-          >
-            {Object.entries(tokenMap).map(([token, address]) => (
-              <MenuItem key={token} value={address}>
-                {token} ({address})
-              </MenuItem>
-            ))}
-          </TextField>
-
-          <TextField
-            label={`Amount (${decimalPrecision} decimals max)`}
-            value={amount}
-            onChange={handleAmountChange}
-            placeholder={`Enter amount (${decimalPrecision} decimals max)`}
-            fullWidth
-            margin="normal"
-            disabled={!tokenAddress} // Disable if no token is selected
-          />
-
-          <TextField
-            type="number"
-            label="Nonce"
-            value={nonce}
-            onChange={(e) => setNonce(e.target.value)}
-            placeholder="e.g. 1234"
-            fullWidth
-            margin="normal"
-            disabled={orderSignedData}
-          />
-
-          <DeadlinePreference
-            deadlinePreference={deadlinePreference}
-            setDeadlinePreference={setDeadlinePreference}
-            openDeadline={openDeadline}
-            setOpenDeadline={setOpenDeadline}
-            fillDeadline={fillDeadline}
-            setFillDeadline={setFillDeadline}
-            handleDeadlinePreferenceChange={handleDeadlinePreferenceChange}
-          />
-
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{
-              backgroundColor: "#D87068",
-              "&:hover": { backgroundColor: "#c76058" },
-            }}
-            onClick={handleSignOrder}
-            disabled={orderIsLoading || orderSignedData}
-          >
-            {orderIsLoading
-              ? "Signing..."
-              : orderSignedData
-              ? "Already Signed"
-              : "Approve Order"}
-          </Button>
+            </AccordionDetails>
+          </Accordion>
         </>
       )}
     </Container>
