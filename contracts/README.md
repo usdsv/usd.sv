@@ -10,14 +10,14 @@
 ## OP STACK ROLLUP (Chain ID: 357)
 
 - INTENT_FACTORY: [0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68](https://explorer-jam-ccw030wxbz.t.conduit.xyz/address/0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68)
-- GROTH16_VERIFYER: [](https://explorer-jam-ccw030wxbz.t.conduit.xyz/address/)
+- GROTH16_VERIFYER: [0x4873F751e909a038616d03C20A94BE07caA9EAAE](https://explorer-jam-ccw030wxbz.t.conduit.xyz/address/0x4873F751e909a038616d03C20A94BE07caA9EAAE)
 - MOCK_USDT: [0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A](https://explorer-jam-ccw030wxbz.t.conduit.xyz/address/0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A)
 - MOCK_WBTC: [0xc580C2C0005798751cd0c221292667deeb991157](https://explorer-jam-ccw030wxbz.t.conduit.xyz/address/0xc580C2C0005798751cd0c221292667deeb991157)
 
 ## INK SEPOLIA (Chain ID: 763373)
 
 - INTENT_FACTORY: [0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68](https://explorer-sepolia.inkonchain.com/address/0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68)
-- GROTH16_VERIFYER: [](https://explorer-sepolia.inkonchain.com/address/)
+- GROTH16_VERIFYER: [0x4873F751e909a038616d03C20A94BE07caA9EAAE](https://explorer-sepolia.inkonchain.com/address/0x4873F751e909a038616d03C20A94BE07caA9EAAE)
 - MOCK_USDT: [0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A](https://explorer-sepolia.inkonchain.com/address/0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A)
 - MOCK_WBTC: [0xc580C2C0005798751cd0c221292667deeb991157](https://explorer-sepolia.inkonchain.com/address/0xc580C2C0005798751cd0c221292667deeb991157)
 

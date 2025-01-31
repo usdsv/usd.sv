@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AppBar, Toolbar, Typography, Box } from "@mui/material";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-const Navbar = () => {
+const Header = () => {
   return (
     <AppBar position="static" color="transparent" elevation={0}>
       {/* Make the Toolbar position relative to absolutely center the middle */}
@@ -81,4 +81,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default Header;

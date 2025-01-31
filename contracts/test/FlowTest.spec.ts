@@ -15,7 +15,7 @@ import { ethers } from "hardhat"
 import { expect } from "chai"
 import { IntentFactory, MockERC20, DualChainIntent, SP1Groth16Verifier, IGroth16Verifier } from "typechain-types"
 import { GaslessCrossChainOrderStruct } from "typechain-types/contracts/IntentFactory"
-import { advanceTimeAndBlock, getLatestBlockTimestamp, getSnapShot, revertEvm } from "./utils/helpers"
+import { advanceTimeAndBlock, getLatestBlockTimestamp, getSnapShot, revertEvm } from "./utils/Helpers"
 
 describe("Logic Work Flow Testing (ERC-7686 and ZK Proof of Finality)", () => {
 	const VERIFIER_ADDRESS = "0x397A5f7f3dBd538f23DE225B51f532c34448dA9B"

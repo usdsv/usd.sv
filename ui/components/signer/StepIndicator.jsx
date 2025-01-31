@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 
-const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
+const StepIndicator = ({ currentStep, stepsCompleted }) => {
   const steps = ["Signing", "Status"];
 
   return (
@@ -11,7 +11,6 @@ const StepIndicator = ({ currentStep, stepsCompleted, switchPaging }) => {
         sx={{
           display: "flex",
           justifyContent: "center",
-
           listStyle: "none",
           padding: 0,
           margin: 0,

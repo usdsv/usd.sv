@@ -3,8 +3,9 @@ import { Box, CssBaseline, Container } from "@mui/material";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
 import Providers from "./Providers";
-import Navbar from "../components/widgets/Navbar";
-import Footer from "../components/widgets/Footer";
+import Header from "../components/layouts/Header";
+import Footer from "../components/layouts/Footer";
+import Head from "next/head";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,8 +34,7 @@ export default function RootLayout({ children }) {
               display: "flex",
               flexDirection: "column",
               minHeight: "100vh", // Full screen height
-              /*background:
-                "linear-gradient(188deg, rgba(200, 115, 162, 1) 14%, rgba(215, 169, 79, 1) 30%, rgba(255, 255, 255, 1) 100%)", */
+              background: "rgba(242 , 244 , 246);",
             }}
           >
             {/* Navbar */}
@@ -45,7 +45,7 @@ export default function RootLayout({ children }) {
                 py: 2,
               }}
             >
-              <Navbar />
+              <Header />
             </Box>
 
             {/* Main content */}
