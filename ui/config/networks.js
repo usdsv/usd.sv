@@ -13,6 +13,7 @@ const knownNetworks = {
     rpc: "",
     wss: "",
     explorer: "https://sepolia.etherscan.io/",
+    icon: "https://static.cx.metamask.io/api/v1/tokenIcons/1/0x0000000000000000000000000000000000000000.png",
   },
   [networkIds.ink]: {
     name: "Ink Sepolia",
@@ -21,6 +22,7 @@ const knownNetworks = {
     wss: "wss://rpc-gel-sepolia.inkonchain.com",
     explorer: "https://explorer-sepolia.inkonchain.com/",
     docs: "https://blog.kraken.com/product/ink-testnet",
+    icon: "http://localhost:3000/ink_sepolia.svg",
   },
   [networkIds.opstack]: {
     name: "OP Stack Rollup",
@@ -28,6 +30,7 @@ const knownNetworks = {
     rpc: "https://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
     wss: "wss://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
     explorer: "https://explorer-jam-ccw030wxbz.t.conduit.xyz/",
+    icon: "http://localhost:3000/op_stack.jpeg",
   },
 };
 
@@ -41,6 +44,10 @@ const knownContracts = {
 
 export const ExplorerLink = (chainId) => {
   return knownNetworks[chainId].explorer;
+};
+
+export const ChainIconLink = (chainId) => {
+  return knownNetworks[chainId].icon;
 };
 
 export const getContractAddress = (chainId, name) => {
@@ -61,7 +68,7 @@ const knownTokens = {
     name: "Tether USD",
     symbol: "USDT",
     decimals: 6,
-    icon: "",
+    icon: "https://static.cx.metamask.io/api/v1/tokenIcons/1/0xdac17f958d2ee523a2206206994597c13d831ec7.png",
     addresses: {
       [networkIds.sepolia]: "0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A",
       [networkIds.ink]: "0xBF882Fc99800A93494fe4844DC0002FcbaA79A7A",
@@ -72,7 +79,7 @@ const knownTokens = {
     name: "wrapped BTC",
     symbol: "WBTC",
     decimals: 18,
-    icon: "",
+    icon: "https://static.cx.metamask.io/api/v1/tokenIcons/1/0x2260fac5e5542a773aa44fbcfedf7c193bc2c599.png",
     addresses: {
       [networkIds.sepolia]: "0xc580C2C0005798751cd0c221292667deeb991157",
       [networkIds.ink]: "0xc580C2C0005798751cd0c221292667deeb991157",
@@ -97,4 +104,8 @@ export const getToken = (chainId, symbol) => {
       address: zeroAddress,
     };
   }
+};
+
+export const getTokens = () => {
+  return [knownTokens.usdt, knownTokens.wbtc];
 };

@@ -2,124 +2,100 @@
 
 import React, { useEffect, useState } from "react";
 import { Box, Container } from "@mui/material";
-import SignIntentForm from "../../../components/containers/SignIntentForm";
-import StepIndicator from "../../../components/widgets/StepIndicator";
+
+import BridgeToken from "@/components/containers/BridgeToken";
+import useSignOrder from "@/hooks/useSignOrder";
+import useSignPermit from "@/hooks/useSignPermit";
 import DeploymentWatcher from "@/components/containers/DeploymentWatcher";
-import { useSubmitOrder } from "@/hooks/useSubmitOrder"; // custom hook
-import { useDebugLogger } from "@/hooks/useDebugLogger"; // optional
+import { useSubmitOrder } from "@/hooks/useSubmitOrder";
+import { BridgeDataHelper } from "@/utils/typeHelper";
 
 const SignerPage = () => {
-  // Steps & wizard state
-  const [userStep, setUserStep] = useState(1);
-  const [stepsCompleted, setStepsCompleted] = useState([false, false]);
-
-  // Order / signing states
-  const [intentOrder, setIntentOrder] = useState(null);
-  const [orderSignature, setOrderSignature] = useState(null);
+  // Require variables for submitSignatures (order data, order signature, permit data, permit signature)
+  const [orderData, setOrderData] = useState(null);
   const [permitData, setPermitData] = useState(null);
-  const [permitSignature, setPermitSignature] = useState(null);
+  const [observeData, setObserveData] = useState(null);
+  const [userSignProcess, setUserSignProcess] = useState(0);
 
-  // Chain info & user data
-  const [userAddress, setUserAddress] = useState(null);
-  const [ephemeralAddress, setEphemeralAddress] = useState(null);
-  const [tokenAddress, setTokenAddress] = useState(null);
-  const [amount, setAmount] = useState(null);
-  const [chainId, setChainId] = useState(null);
-  const [destChainId, setDestChainId] = useState(null);
-  const [fillDeadline, setFillDeadline] = useState(null);
-  const [recoveredAddress, setRecoveredAddress] = useState("");
+  // -------------------- start sign order & permit --------------------
+  const {
+    doSignOrder,
+    orderIsLoading,
+    orderIsError,
+    orderIsSuccess,
+    orderSignedData,
+    orderError,
+  } = useSignOrder(orderData);
 
-  // Estimates
-  const [estimateGas, setEstimateGas] = useState("");
-  const [estimateReward, setEstimateReward] = useState("");
+  const {
+    doSignPermit,
+    permitIsLoading,
+    permitIsError,
+    permitIsSuccess,
+    permitSignedData,
+    permitError,
+  } = useSignPermit(orderData, permitData);
 
-  /**
-   * Step completion logic
-   */
-  const markStepComplete = (stepIndex) => {
-    setStepsCompleted((prev) => {
-      const updated = [...prev];
-      updated[stepIndex] = true;
-      return updated;
+  const handleSign = (order, permit) => {
+    setOrderData(order);
+    setPermitData(permit);
+
+    // calculate deployment watcher parameters
+    const sourceChainId = order.sourceChainId;
+    const ephemeralAddress = order.intentAddress;
+    const destChainId = BridgeDataHelper.getDecodedBridgeData(
+      order.orderData
+    ).destinationChainId;
+    const tokenAmount = BridgeDataHelper.getDecodedBridgeData(
+      order.orderData
+    ).amount;
+
+    setObserveData({
+      sourceChainId,
+      ephemeralAddress,
+      destChainId,
+      tokenAmount,
     });
-    setUserStep(stepIndex + 1);
+
+    setUserSignProcess(1); // user sign process (request to sign order)
   };
 
-  /**
-   * Called by SignIntentForm after successful signing
-   */
-  const handleSign = (sig, formData) => {
-    alert(formData);
-    setOrderSignature(sig);
-    setUserAddress(formData.address);
-    setEphemeralAddress(formData.ephemeralAddress);
-    setTokenAddress(formData.tokenAddress);
-    setAmount(formData.amount);
-    setChainId(formData.chainId);
-    setDestChainId(formData.destChainId);
-  };
+  useEffect(() => {
+    if (userSignProcess === 1) {
+      doSignOrder();
+      setUserSignProcess(2); // user sign process (request to sign permit)
+    } else if (userSignProcess === 2) {
+      if (orderIsSuccess) {
+        doSignPermit();
+        setUserSignProcess(3); // user sign process (request to observe)
+      }
+      if (orderIsError) {
+        setUserSignProcess(0); // user sign process (request to reset)
+      }
+    } else if (userSignProcess === 3) {
+      if (permitIsSuccess) {
+        setUserSignProcess(4); // submit to server
+      }
+      if (permitIsError) {
+        setUserSignProcess(0); // user sign process (request to reset)
+      }
+    }
+  }, [
+    userSignProcess,
+    orderIsSuccess,
+    orderIsError,
+    permitIsSuccess,
+    permitIsError,
+  ]);
 
-  /**
-   * Submit order automatically when everything is present
-   */
-  useSubmitOrder(orderSignature, permitSignature, intentOrder, permitData);
-
-  /**
-   * Debug Logs
-   */
-  useDebugLogger(
-    { label: "orderSignature", value: orderSignature },
-    { label: "permitSignature", value: permitSignature },
-    { label: "recoveredAddress", value: recoveredAddress },
-    { label: "estimateGas", value: estimateGas },
-    { label: "estimateReward", value: estimateReward }
+  useSubmitOrder(
+    orderSignedData,
+    permitSignedData,
+    orderData,
+    permitData,
+    userSignProcess
   );
-
-  /**
-   * Render logic
-   */
-  const renderForm = () => {
-    if (userStep === 1) {
-      return (
-        <SignIntentForm
-          onSign={handleSign}
-          setOrderSignature={setOrderSignature}
-          setParentIntentOrder={setIntentOrder}
-          setEphemeralAddress={setEphemeralAddress}
-          setParentTokenAddress={setTokenAddress}
-          setParentAmount={setAmount}
-          setParentChainId={setChainId}
-          setParentDestChainId={setDestChainId}
-          setParentUserAddress={setUserAddress}
-          setParentFillDeadline={setFillDeadline}
-          recoveredAddress={recoveredAddress}
-          setRecoveredAddress={setRecoveredAddress}
-          setPermitData={setPermitData}
-          setPermitSignature={setPermitSignature}
-          markStepComplete={markStepComplete}
-          setEstimateGas={setEstimateGas}
-          setEstimateReward={setEstimateReward}
-        />
-      );
-    }
-    if (userStep === 2) {
-      return (
-        <DeploymentWatcher
-          sourceChainId={chainId}
-          destChainId={destChainId}
-          ephemeralAddress={ephemeralAddress}
-          tokenAmount={amount}
-          recoveredAddress={recoveredAddress}
-          orderSignature={orderSignature}
-          permitSignature={permitSignature}
-          intentOrder={intentOrder}
-          estimateGas={estimateGas}
-          estimateReward={estimateReward}
-        />
-      );
-    }
-    return null;
-  };
+  // -------------------- end sign order & permit --------------------
 
   return (
     <Box
@@ -140,12 +116,8 @@ const SignerPage = () => {
           gap: 4,
         }}
       >
-        <StepIndicator
-          currentStep={userStep}
-          stepsCompleted={stepsCompleted}
-          switchPaging={setUserStep}
-        />
-        {renderForm()}
+        <BridgeToken handleSign={handleSign} />
+        {userSignProcess === 4 && <DeploymentWatcher {...observeData} />}
       </Container>
     </Box>
   );

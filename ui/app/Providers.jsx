@@ -14,7 +14,7 @@ const opstackrollup = {
   rpcUrls: {
     default: {
       http: [
-        "https://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfR",
+        "https://rpc-jam-ccw030wxbz.t.conduit.xyz/Pwe4skpfPaM8HSTPwHDhXzoJoKqdpjfRQ",
       ],
     },
   },
