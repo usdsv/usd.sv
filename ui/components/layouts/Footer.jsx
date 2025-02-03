@@ -17,11 +17,11 @@ const Footer = () => {
                 X
               </Link>
               <br />
-              <Link href="#" underline="hover" color="primary">
+              <Link href="https://github.com/usdsv/usd.sv" underline="hover" color="primary">
                 Github
               </Link>
               <br />
-              <Link href="#" underline="hover" color="primary">
+              <Link href="https://t.me/usd_sv" underline="hover" color="primary">
                 Telegram
               </Link>
             </Box>
@@ -32,12 +32,12 @@ const Footer = () => {
               ECOSYSTEM
             </Typography>
             <Box>
-              <Link href="#" underline="hover" color="primary">
-                Signer
+              <Link href="https://www.erc7683.org/" underline="hover" color="primary">
+                ERC-7683
               </Link>
               <br />
-              <Link href="#" underline="hover" color="primary">
-                Status
+              <Link href="https://usdt0.to/" underline="hover" color="primary">
+                USDT0
               </Link>
             </Box>
           </Grid>
@@ -47,16 +47,12 @@ const Footer = () => {
               RESOURCES
             </Typography>
             <Box>
-              <Link href="#" underline="hover" color="primary">
+              <Link href="https://docs.usd.sv" underline="hover" color="primary">
                 Docs
               </Link>
               <br />
-              <Link href="#" underline="hover" color="primary">
+              <Link href="https://blog.usd.sv" underline="hover" color="primary">
                 Blog
-              </Link>
-              <br />
-              <Link href="#" underline="hover" color="primary">
-                Media Kit
               </Link>
             </Box>
           </Grid>
@@ -78,7 +74,7 @@ const Footer = () => {
         {/* Footer Info */}
         <Box>
           <Typography variant="body2" color="textSecondary">
-            Colorful Notion
+            Trustless Supercomputing S.V.
           </Typography>
           <Typography variant="body2" color="textSecondary">
             Demo UI for Cross-Chain Intent Bridging &copy; 2025

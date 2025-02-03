@@ -16,7 +16,7 @@ const Header = () => {
             style={{ width: 30, height: 30 }}
           />
           <Typography variant="h6" color="textPrimary">
-            Colorful Notion
+            usd.sv
           </Typography>
         </Box>
 
@@ -44,7 +44,7 @@ const Header = () => {
               Home
             </Typography>
           </Link>
-          <Link href="/signer" passHref>
+          <Link href="https://www.bitpay.com/buy-tether" passHref>
             <Typography
               variant="body1"
               color="textPrimary"
@@ -54,10 +54,10 @@ const Header = () => {
                 fontWeight: "500",
               }}
             >
-              Signer
+              Get USDT
             </Typography>
           </Link>
-          <Link href="/docs" passHref>
+          <Link href="https://coingecko.com/" passHref>
             <Typography
               variant="body1"
               color="textPrimary"
@@ -67,7 +67,7 @@ const Header = () => {
                 fontWeight: "500",
               }}
             >
-              Docs
+              Coingecko
             </Typography>
           </Link>
         </Box>
