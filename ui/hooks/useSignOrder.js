@@ -60,7 +60,7 @@ const useSignOrder = (orderData) => {
     if (orderIsSuccess) {
       console.log("Order signed successfully:", orderSignedData);
     } else if (orderIsError) {
-      console.error("Error signing order:", orderError);
+      console.log("Error signing order:", orderError);
     }
   }, [orderIsSuccess, orderIsError, orderSignedData, orderError, orderReset]);
 

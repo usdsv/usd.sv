@@ -37,11 +37,16 @@ const BridgeToken = ({ handleSign }) => {
 
   // wagmi hooks for account and chain select
   const { isConnected, chain: currentChain } = useAccount();
-  const { chains, isLoading } = useSwitchChain();
+  const { chains, switchChain, isLoading } = useSwitchChain();
 
   // const variable for connected current chain
   const isChainConnected = !isLoading && isConnected;
-  const isSignable = !!orderData.intentAddress && !!permitData.spender;
+  const isSignable =
+    !!orderData.intentAddress &&
+    !!permitData.spender &&
+    !!isChainConnected &&
+    !!values.sourceChain &&
+    currentChain.id === values.sourceChain.id;
 
   // effect hook for initialize source chain to current connected chain
   useEffect(() => {
@@ -96,6 +101,15 @@ const BridgeToken = ({ handleSign }) => {
     })();
   }, [values.sourceToken, values.destToken, values.tokenAmount]);
 
+  // handle fill max button click
+  const fillMaxButtonClick = () => {
+    const sourceTokenBalance = validations.sourceTokenBalance
+      ? validations.sourceTokenBalance
+      : 0;
+
+    handlers.setTokenAmount(ethers.formatEther(sourceTokenBalance));
+  };
+
   // const variable for render when loading connection
   const loadingConnection = (
     <Box
@@ -127,7 +141,7 @@ const BridgeToken = ({ handleSign }) => {
           flex={3}
           flexDirection="column"
           justifyContent="center"
-          gap={3}
+          gap={4}
         >
           {/* Source Chain Select */}
           <Box
@@ -159,6 +173,31 @@ const BridgeToken = ({ handleSign }) => {
                 );
               })}
             ></ChainSelect>
+            {!!isChainConnected &&
+              !!values.sourceChain &&
+              currentChain.name !== values.sourceChain.name && (
+                <Typography
+                  variant="s"
+                  position="absolute"
+                  className={quicksand.className}
+                  sx={{
+                    top: "5rem",
+                    left: "0.5rem",
+                    fontSize: "0.8rem",
+                    fontWeight: "600",
+                    color: "#427BF3",
+                    cursor: "pointer",
+                    ":hover": {
+                      color: "#427BF3C0",
+                    },
+                  }}
+                  onClick={() =>
+                    switchChain({ chainId: values.sourceChain.id })
+                  }
+                >
+                  Switch network to {values.sourceChain.name}
+                </Typography>
+              )}
           </Box>
           {/* Source Token Form */}
           <Box
@@ -191,33 +230,59 @@ const BridgeToken = ({ handleSign }) => {
               placeHolder={"Enter an amount"}
               readOnly={false}
             ></TokenSelect>
-            <Typography
-              variant="s"
-              className={quicksand.className}
-              sx={{
-                fontSize: "1rem",
-                fontWeight: "600",
-                color: validations.amountValid ? "red" : "black",
-                pl: "0.5rem",
-              }}
+            <Box
+              width="100%"
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
             >
-              {validations.sourceTokenBalance &&
-                `${ethers.formatEther(validations.sourceTokenBalance)} 
+              <Typography
+                variant="s"
+                className={quicksand.className}
+                sx={{
+                  fontSize: "1rem",
+                  fontWeight: "600",
+                  color: validations.amountValid ? "red" : "black",
+                  pl: "0.5rem",
+                }}
+              >
+                {validations.sourceTokenBalance &&
+                  `${ethers.formatEther(validations.sourceTokenBalance)} 
               ${values.sourceToken.symbol}`}
+                {validations.sourceTokenBalance && (
+                  <Typography
+                    variant="s"
+                    className={quicksand.className}
+                    sx={{
+                      fontSize: "1rem",
+                      fontWeight: "400",
+                      pl: "0.5rem",
+                    }}
+                  >
+                    available
+                  </Typography>
+                )}
+              </Typography>
               {validations.sourceTokenBalance && (
                 <Typography
                   variant="s"
                   className={quicksand.className}
                   sx={{
-                    fontSize: "1rem",
-                    fontWeight: "400",
-                    pl: "0.5rem",
+                    fontSize: "0.8rem",
+                    fontWeight: "600",
+                    color: "#427BF3",
+                    pr: "0.75rem",
+                    cursor: "pointer",
+                    ":hover": {
+                      color: "#427BF3C0",
+                    },
                   }}
+                  onClick={fillMaxButtonClick}
                 >
-                  available
+                  Fill max
                 </Typography>
               )}
-            </Typography>
+            </Box>
           </Box>
         </Box>
         <Box
@@ -236,7 +301,7 @@ const BridgeToken = ({ handleSign }) => {
           flex={3}
           flexDirection="column"
           justifyContent="center"
-          gap={3}
+          gap={4}
         >
           {/* Dest Chain Select */}
           <Box

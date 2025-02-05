@@ -70,7 +70,7 @@ const useSignPermit = (orderData, permitData) => {
     if (permitIsSuccess) {
       console.log("Permit signed successfully:", permitSignedData);
     } else if (permitIsError) {
-      console.error("Error signing permit:", permitError);
+      console.log("Error signing permit:", permitError);
     }
   }, [
     permitIsSuccess,
