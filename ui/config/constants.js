@@ -16,7 +16,7 @@ export const DeadlineData = [
     icon: <SentimentSatisfiedOutlinedIcon />,
     gas: "estimated gas",
     timestamp: 300,
-    fee: 0.03,
+    fee: 0.005,
   },
 
   {
@@ -26,7 +26,7 @@ export const DeadlineData = [
     icon: <SentimentVerySatisfiedOutlinedIcon />,
     gas: "estimated gas",
     timestamp: 60,
-    fee: 0.05,
+    fee: 0.01,
   },
 
   {
@@ -36,7 +36,7 @@ export const DeadlineData = [
     icon: <SentimentNeutralOutlinedIcon />,
     gas: "estimated gas",
     timestamp: 600,
-    fee: 0.01,
+    fee: 0.003,
   },
 ];
 

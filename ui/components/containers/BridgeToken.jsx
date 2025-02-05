@@ -30,6 +30,7 @@ const BridgeToken = ({ handleSign }) => {
   const [orderData, permitData, validations, values, handlers] =
     useOrderData(manualRequest);
 
+  const [totalDistribution, setTotalDistribution] = useState(0);
   const [receiveTokenAmount, setReceiveTokenAmount] = useState(0);
 
   // preview enable / disable state hook
@@ -46,7 +47,8 @@ const BridgeToken = ({ handleSign }) => {
     !!permitData.spender &&
     !!isChainConnected &&
     !!values.sourceChain &&
-    currentChain.id === values.sourceChain.id;
+    currentChain.id === values.sourceChain.id &&
+    !validations.amountValid;
 
   // effect hook for initialize source chain to current connected chain
   useEffect(() => {
@@ -90,7 +92,11 @@ const BridgeToken = ({ handleSign }) => {
       await getTokenPrice(values.destToken.symbol)
     );
 
-    return (tokenAmount * sourceTokenPrice) / destTokenPrice;
+    setTotalDistribution((tokenAmount * sourceTokenPrice) / destTokenPrice);
+    const distribution = (tokenAmount * sourceTokenPrice) / destTokenPrice;
+    const fillerFee = distribution * DeadlineData[values.deadlineIndex].fee;
+
+    return distribution - fillerFee;
   };
 
   useEffect(() => {
@@ -99,7 +105,12 @@ const BridgeToken = ({ handleSign }) => {
 
       setReceiveTokenAmount(receiveAmount);
     })();
-  }, [values.sourceToken, values.destToken, values.tokenAmount]);
+  }, [
+    values.sourceToken,
+    values.destToken,
+    values.tokenAmount,
+    values.deadlineIndex,
+  ]);
 
   // handle fill max button click
   const fillMaxButtonClick = () => {
@@ -249,21 +260,19 @@ const BridgeToken = ({ handleSign }) => {
                 {validations.sourceTokenBalance &&
                   `${ethers.formatEther(validations.sourceTokenBalance)} 
               ${values.sourceToken.symbol}`}
-                {validations.sourceTokenBalance && (
-                  <Typography
-                    variant="s"
-                    className={quicksand.className}
-                    sx={{
-                      fontSize: "1rem",
-                      fontWeight: "400",
-                      pl: "0.5rem",
-                    }}
-                  >
-                    available
-                  </Typography>
-                )}
+                <Typography
+                  variant="s"
+                  className={quicksand.className}
+                  sx={{
+                    fontSize: "1rem",
+                    fontWeight: "400",
+                    pl: "0.5rem",
+                  }}
+                >
+                  available
+                </Typography>
               </Typography>
-              {validations.sourceTokenBalance && (
+              {!!validations.sourceTokenBalance && (
                 <Typography
                   variant="s"
                   className={quicksand.className}
@@ -391,7 +400,7 @@ const BridgeToken = ({ handleSign }) => {
           <DeadlineSelect
             deadlineIndex={values.deadlineIndex}
             setDeadlineIndex={handlers.setDeadlineIndex}
-            tokenAmount={values.tokenAmount}
+            tokenAmount={totalDistribution}
             tokenSymbol={values.destToken ? values.destToken.symbol : ""}
           />
         </Box>
