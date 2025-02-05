@@ -15,6 +15,7 @@ import DeadlineSelect from "../signer/DeadlineSelect";
 import SignDataPreview from "./SignDataPreview";
 // import necessary objects
 import { quicksand } from "@/utils/fontHelper";
+import { getTokenPrice } from "@/utils/tokenPriceHelper";
 import { getTokens } from "@/config/networks";
 import useOrderData from "@/hooks/useOrderData";
 import { DeadlineData } from "@/config/constants";
@@ -28,6 +29,8 @@ const BridgeToken = ({ handleSign }) => {
 
   const [orderData, permitData, validations, values, handlers] =
     useOrderData(manualRequest);
+
+  const [receiveTokenAmount, setReceiveTokenAmount] = useState(0);
 
   // preview enable / disable state hook
   const [previewEnabled, setPreviewEnabled] = useState(false);
@@ -67,6 +70,31 @@ const BridgeToken = ({ handleSign }) => {
       }
     }
   }, [orderData.intentAddress]);
+
+  // calculate user receive token amount
+  const calculateReceiveTokenAmount = async () => {
+    if (!values.sourceToken) return 0;
+    if (!values.destToken) return 0;
+    if (!values.tokenAmount) return 0;
+
+    const tokenAmount = parseFloat(values.tokenAmount);
+    const sourceTokenPrice = parseFloat(
+      await getTokenPrice(values.sourceToken.symbol)
+    );
+    const destTokenPrice = parseFloat(
+      await getTokenPrice(values.destToken.symbol)
+    );
+
+    return (tokenAmount * sourceTokenPrice) / destTokenPrice;
+  };
+
+  useEffect(() => {
+    (async () => {
+      const receiveAmount = await calculateReceiveTokenAmount();
+
+      setReceiveTokenAmount(receiveAmount);
+    })();
+  }, [values.sourceToken, values.destToken, values.tokenAmount]);
 
   // const variable for render when loading connection
   const loadingConnection = (
@@ -267,15 +295,7 @@ const BridgeToken = ({ handleSign }) => {
               token={values.destToken}
               setToken={handlers.setDestToken}
               tokens={getTokens()}
-              tokenAmount={
-                values.tokenAmount
-                  ? parseFloat(values.tokenAmount) -
-                    parseFloat(
-                      values.tokenAmount *
-                        DeadlineData[values.deadlineIndex].fee
-                    )
-                  : 0
-              }
+              tokenAmount={parseFloat(receiveTokenAmount).toFixed(6)}
               disabler={values.destChain}
               placeHolder={"Calculated amount"}
               readOnly={true}

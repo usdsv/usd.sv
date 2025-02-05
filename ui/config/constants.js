@@ -39,3 +39,17 @@ export const DeadlineData = [
     fee: 0.01,
   },
 ];
+
+export const PRICE_API_URL =
+  "https://api.dexscreener.com/latest/dex/pairs/ethereum/";
+
+export const UNIV3POOL_ADDRESSES = [
+  {
+    symbol: "WBTC",
+    address: "0x99ac8cA7087fA4A2A1FB6357269965A2014ABc35",
+  },
+  {
+    symbol: "USDT",
+    address: "0x3416cF6C708Da44DB2624D63ea0AAef7113527C6",
+  },
+];
