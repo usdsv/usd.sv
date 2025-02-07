@@ -123,7 +123,15 @@ const validateSignature = async (inputData) => {
 
   // 5. Prepare some information
   bridgeData = ethers.utils.defaultAbiCoder.decode(
-    ["address", "address", "uint256", "uint256", "address", "address"],
+    [
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "address",
+      "uint256",
+      "address",
+    ],
     values.orderData
   );
 
@@ -272,7 +280,15 @@ const submitPermit = async () => {
   let bridgeDataAfterDeploy = [...bridgeData];
   bridgeDataAfterDeploy[0] = await fillerSource.getAddress();
   const bridgeEncoded = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "address", "address"], // Specify the types
+    [
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "address",
+      "uint256",
+      "address",
+    ], // Specify the types
     bridgeDataAfterDeploy
   );
 
@@ -305,7 +321,15 @@ const fillOrder = async () => {
   let bridgeDataAfterDeploy = [...bridgeData];
   bridgeDataAfterDeploy[0] = await fillerDest.getAddress();
   const bridgeEncoded = ethers.utils.defaultAbiCoder.encode(
-    ["address", "address", "uint256", "uint256", "address", "address"], // Specify the types
+    [
+      "address",
+      "address",
+      "uint256",
+      "uint256",
+      "address",
+      "uint256",
+      "address",
+    ], // Specify the types
     bridgeDataAfterDeploy
   );
 

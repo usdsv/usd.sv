@@ -31,7 +31,6 @@ const BridgeToken = ({ handleSign }) => {
     useOrderData(manualRequest);
 
   const [totalDistribution, setTotalDistribution] = useState(0);
-  const [receiveTokenAmount, setReceiveTokenAmount] = useState(0);
 
   // preview enable / disable state hook
   const [previewEnabled, setPreviewEnabled] = useState(false);
@@ -103,7 +102,7 @@ const BridgeToken = ({ handleSign }) => {
     (async () => {
       const receiveAmount = await calculateReceiveTokenAmount();
 
-      setReceiveTokenAmount(receiveAmount);
+      handlers.setReceiveAmount(receiveAmount);
     })();
   }, [
     values.sourceToken,
@@ -369,7 +368,7 @@ const BridgeToken = ({ handleSign }) => {
               token={values.destToken}
               setToken={handlers.setDestToken}
               tokens={getTokens()}
-              tokenAmount={parseFloat(receiveTokenAmount).toFixed(6)}
+              tokenAmount={parseFloat(values.receiveAmount).toFixed(6)}
               disabler={values.destChain}
               placeHolder={"Calculated amount"}
               readOnly={true}

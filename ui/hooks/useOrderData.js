@@ -6,6 +6,7 @@ import { DeadlineData } from "@/config/constants";
 import { abis } from "@/abi";
 import { SALT } from "@/config/constants";
 import { getContractAddress, getTokens } from "@/config/networks";
+import { BridgeDataHelper } from "@/utils/typeHelper";
 
 const useOrderData = (manualRequest) => {
   // hooks for use input handleing
@@ -14,6 +15,7 @@ const useOrderData = (manualRequest) => {
   const [sourceToken, setSourceToken] = useState(null);
   const [destToken, setDestToken] = useState(null);
   const [tokenAmount, setTokenAmount] = useState("");
+  const [receiveAmount, setReceiveAmount] = useState("");
   const [deadlineIndex, setDeadlineIndex] = useState(0);
 
   // state for token amount validation (insufficient check)
@@ -31,24 +33,17 @@ const useOrderData = (manualRequest) => {
     const sourceTokenAddress = sourceToken.addresses[sourceChain.id];
     const destTokenAddress = destToken.addresses[destChain.id];
 
-    return [
-      "0x0000000000000000000000000000000000000000",
-      sourceTokenAddress,
-      !!tokenAmount ? ethers.parseEther(tokenAmount) : 0,
-      destChain.id,
-      destTokenAddress,
-      address,
-    ];
-  };
-
-  // function for getting bridge data encoded value from bridge data
-  const getBridgeDataEncode = () => {
-    const encodedbridgeData = ethers.AbiCoder.defaultAbiCoder().encode(
-      ["address", "address", "uint256", "uint256", "address", "address"],
-      getBridgeData()
-    );
-
-    return encodedbridgeData;
+    return {
+      filler: "0x0000000000000000000000000000000000000000",
+      sourceTokenAddress: sourceTokenAddress,
+      sendAmount: !!tokenAmount ? ethers.parseEther(tokenAmount) : 0,
+      destinationChainId: destChain.id,
+      destinationTokenAddress: destTokenAddress,
+      receiveAmount: !!receiveAmount
+        ? ethers.parseEther(receiveAmount.toString())
+        : 0,
+      beneficiary: address,
+    };
   };
 
   // get source token balance using wagmi useReadContract hook
@@ -112,7 +107,10 @@ const useOrderData = (manualRequest) => {
       !!destToken &&
       parseFloat(tokenAmount) > 0
     ) {
-      const encodedBridgeData = getBridgeDataEncode();
+      const encodedBridgeData = BridgeDataHelper.getEncodedBridgeData(
+        getBridgeData()
+      );
+
       const currentTimeStamp = Math.floor(Date.now() / 1000);
       setOrderData({
         intentAddress: "0x0000000000000000000000000000000000000000",
@@ -140,6 +138,7 @@ const useOrderData = (manualRequest) => {
     sourceToken,
     destToken,
     tokenAmount,
+    receiveAmount,
     deadlineIndex,
     manualRequest,
   ]);
@@ -154,6 +153,7 @@ const useOrderData = (manualRequest) => {
       sourceToken,
       destToken,
       tokenAmount,
+      receiveAmount,
       deadlineIndex,
     },
     {
@@ -162,6 +162,7 @@ const useOrderData = (manualRequest) => {
       setSourceToken,
       setDestToken,
       setTokenAmount,
+      setReceiveAmount,
       setDeadlineIndex,
     },
   ];
