@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
 import {ISP1Verifier, ISP1VerifierWithHash} from "../interfaces/ISP1Verifier.sol";
-import {Groth16Verifier} from "./Groth16Verifier.sol";
+import {Groth16Verifier1} from "./Groth16Verifier1.sol";
 
 /// @title SP1 Verifier
 /// @author Succinct Labs
 /// @notice This contracts implements a solidity verifier for SP1.
-contract SP1Verifier is Groth16Verifier, ISP1VerifierWithHash {
+contract SP1Verifier1 is Groth16Verifier1, ISP1VerifierWithHash {
     /// @notice Thrown when the verifier selector from this proof does not match the one in this
     /// verifier. This indicates that this proof was sent to the wrong verifier.
     /// @param received The verifier selector from the first 4 bytes of the proof.
@@ -24,12 +23,15 @@ contract SP1Verifier is Groth16Verifier, ISP1VerifierWithHash {
 
     /// @inheritdoc ISP1VerifierWithHash
     function VERIFIER_HASH() public pure returns (bytes32) {
-        return 0x090690902a12d1d02c07a1ad25aa76bded5f6499e12a11ba127669501b553998;
+        return
+            0x090690902a12d1d02c07a1ad25aa76bded5f6499e12a11ba127669501b553998;
     }
 
     /// @notice Hashes the public values to a field elements inside Bn254.
     /// @param publicValues The public values.
-    function hashPublicValues(bytes calldata publicValues) public pure returns (bytes32) {
+    function hashPublicValues(
+        bytes calldata publicValues
+    ) public pure returns (bytes32) {
         return sha256(publicValues) & bytes32(uint256((1 << 253) - 1));
     }
 

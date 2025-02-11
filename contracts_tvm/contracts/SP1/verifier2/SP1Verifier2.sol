@@ -2,15 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {ISP1Verifier, ISP1VerifierWithHash} from "../interfaces/ISP1Verifier.sol";
-import {Groth16Verifier} from "./Groth16Verifier.sol";
-
+import {Groth16Verifier2} from "./Groth16Verifier2.sol";
 
 // src/v4.0.0-rc.3/SP1VerifierGroth16.sol
 
 /// @title SP1 Verifier
 /// @author Succinct Labs
 /// @notice This contracts implements a solidity verifier for SP1.
-contract SP1Verifier is Groth16Verifier, ISP1VerifierWithHash {
+contract SP1Verifier2 is Groth16Verifier2, ISP1VerifierWithHash {
     /// @notice Thrown when the verifier selector from this proof does not match the one in this
     /// verifier. This indicates that this proof was sent to the wrong verifier.
     /// @param received The verifier selector from the first 4 bytes of the proof.
@@ -26,12 +25,15 @@ contract SP1Verifier is Groth16Verifier, ISP1VerifierWithHash {
 
     /// @inheritdoc ISP1VerifierWithHash
     function VERIFIER_HASH() public pure returns (bytes32) {
-        return 0x11b6a09d63d255ad425ee3a7f6211d5ec63fbde9805b40551c3136275b6f4eb4;
+        return
+            0x11b6a09d63d255ad425ee3a7f6211d5ec63fbde9805b40551c3136275b6f4eb4;
     }
 
     /// @notice Hashes the public values to a field elements inside Bn254.
     /// @param publicValues The public values.
-    function hashPublicValues(bytes calldata publicValues) public pure returns (bytes32) {
+    function hashPublicValues(
+        bytes calldata publicValues
+    ) public pure returns (bytes32) {
         return sha256(publicValues) & bytes32(uint256((1 << 253) - 1));
     }
 

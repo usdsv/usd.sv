@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const port = process.env.HOST_PORT || 9090;
 
 module.exports = {
@@ -24,8 +26,7 @@ module.exports = {
       network_id: "3",
     },
     development: {
-      privateKey:
-        "0000000000000000000000000000000000000000000000000000000000000001",
+      privateKey: process.env.PRIVATE_KEY_DEV,
       userFeePercentage: 0,
       feeLimit: 1000 * 1e6,
       fullHost: "http://127.0.0.1:" + port,

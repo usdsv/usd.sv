@@ -1,3 +1,5 @@
+const port = process.env.HOST_PORT || 9090;
+
 module.exports = {
   networks: {
     bttc: {
@@ -12,7 +14,7 @@ module.exports = {
     },
     development: {
       privateKey: process.env.PRIVATE_KEY_DEV,
-      fullHost: "http://127.0.0.1:8545",
+      fullHost: "http://127.0.0.1:" + port,
       network_id: "9",
     },
   },
