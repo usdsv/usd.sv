@@ -1,3 +1,5 @@
+import { configDotenv } from "dotenv";
+
 import SentimentNeutralOutlinedIcon from "@mui/icons-material/SentimentNeutralOutlined";
 import SentimentSatisfiedOutlinedIcon from "@mui/icons-material/SentimentSatisfiedOutlined";
 import SentimentVerySatisfiedOutlinedIcon from "@mui/icons-material/SentimentVerySatisfiedOutlined";
@@ -53,3 +55,15 @@ export const UNIV3POOL_ADDRESSES = [
     address: "0x3416cF6C708Da44DB2624D63ea0AAef7113527C6",
   },
 ];
+
+export const SUPPORTED_WALLETS = ["metamask", "tron-link"];
+
+export const WIDGET_CONFIG = {
+  externalWallets: true,
+
+  wallets: SUPPORTED_WALLETS,
+
+  apiKey: process.env.RANGO_API_KEY,
+
+  walletConnectProjectId: process.env.WALLET_CONNECT_PROJECT_ID,
+};

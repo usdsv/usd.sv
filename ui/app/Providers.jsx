@@ -2,10 +2,13 @@
 "use client"; // Required to use client-side hooks
 
 import "@rainbow-me/rainbowkit/styles.css";
+import React, { useCallback } from "react";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
 import { inkSepolia, sepolia } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { WidgetProvider } from "@rango-dev/widget-embedded";
+import { WIDGET_CONFIG } from "@/config/constants";
 
 const opstackrollup = {
   id: 357,
@@ -42,12 +45,27 @@ const config = getDefaultConfig({
 const queryClient = new QueryClient();
 
 const Providers = ({ children }) => {
+  const handleUpdate = useCallback(
+    (providerName, eventType, accounts, providerState, supportedChains) => {
+      console.log({
+        providerName,
+        eventType,
+        accounts,
+        providerState,
+        supportedChains,
+      });
+    },
+    []
+  );
+
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>{children}</RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <WidgetProvider config={WIDGET_CONFIG} onUpdateState={handleUpdate}>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider>{children}</RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </WidgetProvider>
   );
 };
 

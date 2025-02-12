@@ -338,6 +338,7 @@ const BridgeToken = ({ handleSign }) => {
               chains={chains.filter((chain) => {
                 return (
                   values.sourceChain === null ||
+                  values.sourceChain === undefined ||
                   chain.id !== values.sourceChain.id
                 );
               })}
