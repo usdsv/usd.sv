@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 // import wagmi hooks
-import { useAccount, useSignTypedData, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 // import mui components
 import { Container, Box, Typography, Button } from "@mui/material";
 import ReadMoreIcon from "@mui/icons-material/ReadMore";
@@ -16,7 +16,7 @@ import SignDataPreview from "./SignDataPreview";
 // import necessary objects
 import { quicksand } from "@/utils/fontHelper";
 import { getTokenPrice } from "@/utils/tokenPriceHelper";
-import { getTokens } from "@/config/networks";
+import { getTokens, networkIds } from "@/config/networks";
 import useOrderData from "@/hooks/useOrderData";
 import { DeadlineData } from "@/config/constants";
 
@@ -39,6 +39,17 @@ const BridgeToken = ({ handleSign }) => {
   const { isConnected, chain: currentChain } = useAccount();
   const { chains, switchChain, isLoading } = useSwitchChain();
 
+  useEffect(() => {
+    if (chains) {
+      if (chains.length < 4) {
+        chains.push({
+          id: 1001,
+          name: "Nile",
+        });
+      }
+    }
+  }, [chains]);
+
   // const variable for connected current chain
   const isChainConnected = !isLoading && isConnected;
   const isSignable =
@@ -46,7 +57,8 @@ const BridgeToken = ({ handleSign }) => {
     !!permitData.spender &&
     !!isChainConnected &&
     !!values.sourceChain &&
-    currentChain.id === values.sourceChain.id &&
+    (currentChain.id === values.sourceChain.id ||
+      values.sourceChain.id === networkIds.nile) &&
     !validations.amountValid;
 
   // effect hook for initialize source chain to current connected chain

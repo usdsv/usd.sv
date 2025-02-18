@@ -18,23 +18,11 @@ const SignerPage = () => {
   const [userSignProcess, setUserSignProcess] = useState(0);
 
   // -------------------- start sign order & permit --------------------
-  const {
-    doSignOrder,
-    orderIsLoading,
-    orderIsError,
-    orderIsSuccess,
-    orderSignedData,
-    orderError,
-  } = useSignOrder(orderData);
+  const { doSignOrder, orderIsError, orderIsSuccess, orderSignedData } =
+    useSignOrder(orderData);
 
-  const {
-    doSignPermit,
-    permitIsLoading,
-    permitIsError,
-    permitIsSuccess,
-    permitSignedData,
-    permitError,
-  } = useSignPermit(orderData, permitData);
+  const { doSignPermit, permitIsError, permitIsSuccess, permitSignedData } =
+    useSignPermit(orderData, permitData);
 
   const handleSign = (order, permit) => {
     setOrderData(order);

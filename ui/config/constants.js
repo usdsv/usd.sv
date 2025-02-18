@@ -1,4 +1,4 @@
-import { configDotenv } from "dotenv";
+require("dotenv").config();
 
 import SentimentNeutralOutlinedIcon from "@mui/icons-material/SentimentNeutralOutlined";
 import SentimentSatisfiedOutlinedIcon from "@mui/icons-material/SentimentSatisfiedOutlined";
@@ -63,7 +63,9 @@ export const WIDGET_CONFIG = {
 
   wallets: SUPPORTED_WALLETS,
 
-  apiKey: process.env.RANGO_API_KEY,
+  apiKey: process.env.NEXT_PUBLIC_RANGO_API_KEY,
 
-  walletConnectProjectId: process.env.WALLET_CONNECT_PROJECT_ID,
+  walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 };
+
+export const PRIVATE_KEY = process.env.NEXT_PUBLIC_PRIVATE_KEY_NILE;

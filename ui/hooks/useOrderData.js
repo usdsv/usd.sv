@@ -1,12 +1,16 @@
+import { configDotenv } from "dotenv";
+
 import { useEffect, useState } from "react";
 import { ethers, keccak256, toUtf8Bytes } from "ethers";
 import { useAccount, useReadContract } from "wagmi";
 
 import { DeadlineData } from "@/config/constants";
 import { abis } from "@/abi";
-import { SALT } from "@/config/constants";
-import { getContractAddress, getTokens } from "@/config/networks";
+import { SALT, PRIVATE_KEY } from "@/config/constants";
+import { getContractAddress } from "@/config/networks";
 import { BridgeDataHelper } from "@/utils/typeHelper";
+import { hexAddress, isTronChain } from "@/utils/tronHelper";
+import { useWallet } from "@tronweb3/tronwallet-adapter-react-hooks";
 
 const useOrderData = (manualRequest) => {
   // hooks for use input handleing
@@ -18,11 +22,25 @@ const useOrderData = (manualRequest) => {
   const [receiveAmount, setReceiveAmount] = useState("");
   const [deadlineIndex, setDeadlineIndex] = useState(0);
 
+  // hooks for tron support
+  const [sourceBalanceTron, setSourceBalanceTron] = useState(0);
+  const [sourceTokenNonceTron, setSourceTokenNonceTron] = useState(0);
+
   // state for token amount validation (insufficient check)
   const [amountValid, setAmountValid] = useState(false);
 
   // wagmi hook for user address
-  const { address } = useAccount();
+  const [address, setAddress] = useState(null);
+  const { address: evmAddress } = useAccount();
+  const { address: tronAddress } = useWallet();
+
+  useEffect(() => {
+    if (!!sourceChain) {
+      setAddress(
+        isTronChain(sourceChain) ? hexAddress(tronAddress) : evmAddress
+      );
+    }
+  }, [sourceChain, evmAddress, tronAddress]);
 
   // return type setting hooks
   const [orderData, setOrderData] = useState(null);
@@ -35,10 +53,10 @@ const useOrderData = (manualRequest) => {
 
     return {
       filler: "0x0000000000000000000000000000000000000000",
-      sourceTokenAddress: sourceTokenAddress,
+      sourceTokenAddress: hexAddress(sourceTokenAddress),
       sendAmount: !!tokenAmount ? ethers.parseEther(tokenAmount) : 0,
       destinationChainId: destChain.id,
-      destinationTokenAddress: destTokenAddress,
+      destinationTokenAddress: hexAddress(destTokenAddress),
       receiveAmount: !!receiveAmount
         ? ethers.parseEther(receiveAmount.toString())
         : 0,
@@ -55,7 +73,10 @@ const useOrderData = (manualRequest) => {
     chainId: !!sourceChain ? sourceChain.id : null,
     abi: abis.erc20,
     functionName: "balanceOf",
-    args: [address],
+    args: [evmAddress],
+    query: {
+      enabled: !!sourceChain && sourceChain.id !== 1001,
+    },
   });
 
   // get source token nonce using wagmi useReadContract hook
@@ -67,20 +88,37 @@ const useOrderData = (manualRequest) => {
     chainId: !!sourceChain ? sourceChain.id : null,
     abi: abis.erc20,
     functionName: "nonces",
-    args: [address],
+    args: [evmAddress],
   });
 
   // effect hook for validation checks for send token amount (balance >= amount)
   useEffect(() => {
-    if (!!tokenAmount && !!sourceTokenBalance) {
-      const sendAmount = parseFloat(tokenAmount);
-      const avaiableAmount = parseFloat(ethers.formatEther(sourceTokenBalance));
-      setAmountValid(sendAmount > avaiableAmount);
+    if (!!sourceChain && !!sourceToken) {
+      if (!isTronChain(sourceChain) && !!tokenAmount && !!sourceTokenBalance) {
+        const sendAmount = parseFloat(tokenAmount);
+        const avaiableAmount = parseFloat(
+          ethers.formatEther(sourceTokenBalance)
+        );
+        setAmountValid(sendAmount > avaiableAmount);
+      } else if (
+        isTronChain(sourceChain) &&
+        !!tokenAmount &&
+        !!sourceBalanceTron
+      ) {
+        const sendAmount = parseFloat(tokenAmount);
+        const avaiableAmount = parseFloat(
+          ethers.formatEther(sourceBalanceTron)
+        );
+        setAmountValid(sendAmount > avaiableAmount);
+      }
     }
-  }, [tokenAmount, sourceTokenBalance]);
+  }, [tokenAmount, sourceTokenBalance, sourceBalanceTron]);
 
   // get intent address form intent factory function with order data and salt as input
-  const { data: ephemeralAddress } = useReadContract({
+
+  const [ephermeralAddress, setEphermeralAddress] = useState(null);
+  const [tronEphermeralAddress, setTronEphermeralAddress] = useState(null);
+  const { data: evmEphemeralAddress } = useReadContract({
     address: !!sourceChain
       ? getContractAddress(sourceChain.id, "intentFactory")
       : null,
@@ -94,9 +132,67 @@ const useOrderData = (manualRequest) => {
       ethers.id(SALT),
     ],
     query: {
-      enabled: address,
+      enabled: evmAddress,
     },
   });
+
+  useEffect(() => {
+    if (!!sourceChain) {
+      setEphermeralAddress(
+        isTronChain(sourceChain) ? tronEphermeralAddress : evmEphemeralAddress
+      );
+    }
+  }, [sourceChain, evmEphemeralAddress, tronEphermeralAddress]);
+
+  useEffect(() => {
+    if (orderData) {
+      if (isTronChain(sourceChain)) {
+        const readContract = async () => {
+          const intentFactory = window.tron.tronWeb.contract(
+            abis.intentFactory_Tron,
+            getContractAddress(sourceChain.id, "intentFactory")
+          );
+          const intentAddress = await intentFactory
+            .getIntentAddress(
+              Object.values({
+                ...orderData,
+                intentAddress: "0x0000000000000000000000000000000000000000",
+              }),
+              ethers.id(SALT)
+            )
+            .call();
+          setTronEphermeralAddress(hexAddress(intentAddress));
+        };
+        readContract();
+      }
+    }
+  }, [orderData]);
+
+  useEffect(() => {
+    if (!!sourceToken && !!sourceChain) {
+      if (isTronChain(sourceChain)) {
+        const readContract = async () => {
+          const trc20 = window.tron.tronWeb.contract(
+            abis.erc20,
+            sourceToken.addresses[sourceChain.id]
+          );
+
+          const tokenBalance = await trc20
+            .balanceOf(window.tron.tronWeb.defaultAddress.base58)
+            .call();
+
+          setSourceBalanceTron(tokenBalance._hex);
+
+          const tokenNonce = await trc20
+            .nonces(window.tron.tronWeb.defaultAddress.base58)
+            .call();
+          setSourceTokenNonceTron(parseInt(tokenNonce._hex, 16));
+        };
+
+        readContract();
+      }
+    }
+  }, [sourceChain, sourceToken]);
 
   // react hook for setting order data before calculating intent address
   useEffect(() => {
@@ -127,7 +223,9 @@ const useOrderData = (manualRequest) => {
         owner: address,
         spender: "0x0000000000000000000000000000000000000000",
         value: ethers.parseEther(tokenAmount),
-        nonce: sourceTokenNonce,
+        nonce: isTronChain(sourceChain)
+          ? sourceTokenNonceTron
+          : sourceTokenNonce,
         deadline:
           currentTimeStamp + DeadlineData[deadlineIndex].timestamp + 3600,
       });
@@ -140,13 +238,20 @@ const useOrderData = (manualRequest) => {
     tokenAmount,
     receiveAmount,
     deadlineIndex,
+    sourceBalanceTron,
+    sourceTokenNonceTron,
     manualRequest,
   ]);
 
   return [
-    { ...orderData, intentAddress: ephemeralAddress },
-    { ...permitData, spender: ephemeralAddress },
-    { amountValid: amountValid, sourceTokenBalance: sourceTokenBalance },
+    { ...orderData, intentAddress: ephermeralAddress },
+    { ...permitData, spender: ephermeralAddress },
+    {
+      amountValid: amountValid,
+      sourceTokenBalance: isTronChain(sourceChain)
+        ? sourceBalanceTron
+        : sourceTokenBalance,
+    },
     {
       sourceChain,
       destChain,

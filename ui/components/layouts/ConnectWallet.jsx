@@ -1,50 +1,141 @@
 "use client";
 
-import React, { Fragment, useCallback } from "react";
-import { useWallets, Widget } from "@rango-dev/widget-embedded";
-import { SUPPORTED_WALLETS, WIDGET_CONFIG } from "@/config/constants";
-import { Button } from "@mui/material";
+import React, { useState, useRef, useEffect } from "react";
+import { Button, Box, Typography, MenuItem } from "@mui/material";
+import { quicksand } from "@/utils/fontHelper";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWallet } from "@tronweb3/tronwallet-adapter-react-hooks";
 
-function ExternalWallet({ providerName }) {
-  const { state, connect, disconnect } = useWallets();
-  const providerState = state(providerName);
-  const handleClick = useCallback(() => {
-    try {
-      if (providerState.connected) {
-        disconnect(providerName);
-      } else {
-        connect(providerName);
-      }
-    } catch (error) {
-      console.error(error);
+const TronConnectButton = () => {
+  const {
+    wallet,
+    address,
+    connected,
+    select,
+    connect,
+    disconnect,
+    signMessage,
+    signTransaction,
+  } = useWallet();
+
+  const handleClick = async () => {
+    if (!connected) {
+      select("TronLink");
+    } else {
+      disconnect();
     }
-  }, [providerName, providerState, connect, disconnect]);
+  };
+
   return (
     <Button
-      disabled={!providerState.installed}
-      type={providerState.connected ? "warning" : "primary"}
-      size="large"
+      sx={{
+        height: "42px",
+        border: "none",
+        borderRadius: "10px",
+        backgroundColor: "#3C63FF",
+        marginTop: "0.75rem",
+        paddingInline: "0.75rem",
+        width: "100%",
+        ":hover": {
+          backgroundColor: "#5C63FF",
+        },
+      }}
       onClick={handleClick}
     >
-      {providerState.connected
-        ? `disconnect ${providerName}`
-        : `connect ${providerName}`}
+      <Typography
+        variant="s"
+        textTransform="none"
+        className={quicksand.className}
+        fontSize="1rem"
+        fontWeight="600"
+        color="#F5F5F5"
+        width="100%"
+      >
+        {connected ? address : "Connect"}
+      </Typography>
     </Button>
   );
-}
+};
 
 const ConnectWallet = () => {
+  const [menuDropped, setMenuDropped] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const handleSelectClick = () => {
+    setMenuDropped(!menuDropped);
+  };
+
+  // ---------------------------------------------------------------
+  // start - use Ref handlers for hide dropdown when clicked outside
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setMenuDropped(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  // end - use Ref handlers for hide dropdown when clicked outside
+  // -------------------------------------------------------------
   return (
-    <div className="main-container">
-      <div className="wallets-container">
-        {SUPPORTED_WALLETS.map((providerName, index) => (
-          <Fragment key={index}>
-            <ExternalWallet providerName={providerName} />
-            <br />
-          </Fragment>
-        ))}
-      </div>
-    </div>
+    <Box ref={dropdownRef}>
+      <Button
+        sx={{
+          height: "42px",
+          border: "none",
+          borderRadius: "10px",
+          backgroundColor: "#3C63FF",
+          paddingInline: "0.75rem",
+          width: "100%",
+          ":hover": {
+            backgroundColor: "#5C63FF",
+          },
+        }}
+        onClick={handleSelectClick}
+      >
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          width="100%"
+        >
+          <Typography
+            variant="s"
+            textTransform="none"
+            className={quicksand.className}
+            fontSize="1rem"
+            fontWeight="600"
+            color="#F5F5F5"
+            width="100%"
+          >
+            Connect Wallet
+          </Typography>
+        </Box>
+      </Button>
+
+      {menuDropped && (
+        <Box
+          position="absolute"
+          sx={{
+            top: "3.75rem",
+            right: "1.4rem",
+            backgroundColor: "#5C63FF20",
+            border: "1px solid #5C63FF40",
+            borderRadius: "10px",
+            padding: "0.25rem",
+            zIndex: "9999",
+            padding: 1,
+          }}
+        >
+          <ConnectButton></ConnectButton>
+          <TronConnectButton></TronConnectButton>
+        </Box>
+      )}
+    </Box>
   );
 };
 
