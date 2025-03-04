@@ -6,7 +6,7 @@ import { useAccount, useReadContract } from "wagmi";
 
 import { DeadlineData } from "@/config/constants";
 import { abis } from "@/abi";
-import { SALT, PRIVATE_KEY } from "@/config/constants";
+import { SALT } from "@/config/constants";
 import { getContractAddress } from "@/config/networks";
 import { BridgeDataHelper } from "@/utils/typeHelper";
 import { hexAddress, isTronChain } from "@/utils/tronHelper";

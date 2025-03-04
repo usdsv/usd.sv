@@ -57,15 +57,3 @@ export const UNIV3POOL_ADDRESSES = [
 ];
 
 export const SUPPORTED_WALLETS = ["metamask", "tron-link"];
-
-export const WIDGET_CONFIG = {
-  externalWallets: true,
-
-  wallets: SUPPORTED_WALLETS,
-
-  apiKey: process.env.NEXT_PUBLIC_RANGO_API_KEY,
-
-  walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
-};
-
-export const PRIVATE_KEY = process.env.NEXT_PUBLIC_PRIVATE_KEY_NILE;
