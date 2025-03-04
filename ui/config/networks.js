@@ -5,7 +5,7 @@ export const networkIds = {
   opstack: 357,
   sepolia: 11155111,
   ink: 763373,
-  nile: 1001,
+  nile: 3448148188,
 };
 
 const knownNetworks = {
@@ -36,7 +36,7 @@ const knownNetworks = {
   },
   [networkIds.nile]: {
     name: "Nile",
-    chainId: 1001,
+    chainId: 3448148188,
     rpc: "https://nile.trongrid.io/jsonrpc/",
     wss: "wss://nile.trongrid.io/jsonrpc/",
     explorer: "https://nile.tronscan.org/",
@@ -46,7 +46,7 @@ const knownNetworks = {
 
 const knownContracts = {
   intentFactory: {
-    [networkIds.sepolia]: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
+    [networkIds.sepolia]: "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972",
     [networkIds.ink]: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
     [networkIds.opstack]: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
     [networkIds.nile]: "TDkT1GLv9hcKSDDr4o3UV1fCSidDB2DXQb",

@@ -107,6 +107,9 @@ const useSignPermit = (orderData, permitData) => {
           permitType,
           permitData
         );
+        console.log(permitDomain);
+        console.log(permitType);
+        console.log(permitData);
         console.log("signature: ", signature);
         setTronPermitSignedData(signature);
         setTronPermitIsSuccess(true);

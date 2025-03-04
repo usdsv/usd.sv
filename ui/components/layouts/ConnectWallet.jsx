@@ -21,6 +21,7 @@ const TronConnectButton = () => {
   const handleClick = async () => {
     if (!connected) {
       select("TronLink");
+      connect();
     } else {
       disconnect();
     }

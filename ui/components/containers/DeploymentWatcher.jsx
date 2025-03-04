@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ethers } from "ethers";
 import { zeroAddress } from "viem";
 
@@ -13,8 +13,10 @@ import {
   ExplorerLink,
   getToken,
   tokenIds,
+  networkIds,
 } from "@/config/networks";
 import { quicksand } from "@/utils/fontHelper";
+import { tronAddress } from "@/utils/tronHelper";
 
 const WatcherItem = ({ title, status, chainId, txHash }) => {
   return (
@@ -83,6 +85,7 @@ const WatcherItem = ({ title, status, chainId, txHash }) => {
     </Box>
   );
 };
+
 const DepolymentWatcher = ({
   sourceChainId,
   ephemeralAddress,
@@ -103,6 +106,9 @@ const DepolymentWatcher = ({
   const [fillerTransferDone, setFillerTransferDone] = useState(false);
   const [fillerTransferTx, setFillerTransferTx] = useState("");
 
+  const [tranferFrom, setTransferFrom] = useState("");
+  const [tranferTo, setTransferTo] = useState("");
+
   // ------------------ Convert Chain IDs to Numbers ------------------
   sourceChainId = parseInt(sourceChainId, 10);
   destChainId = parseInt(destChainId, 10);
@@ -114,34 +120,11 @@ const DepolymentWatcher = ({
     functionName: "bridgeData",
   });
 
-  console.log({ bridgeData });
-
   useEffect(() => {
     if (destDeployTx) {
       refetchBridgeData();
     }
   }, [destDeployTx]);
-
-  // ------------------ Contract Events: Watchers ------------------
-
-  // 1) Source Intent Deploy Watcher
-  try {
-    useWatchContractEvent({
-      address: getContractAddress(sourceChainId, "intentFactory"),
-      chainId: sourceChainId,
-      abi: abis.intentFactory,
-      eventName: "IntentDeployed",
-      onLogs(logs) {
-        console.log("SourceChainIntent: ", logs);
-        if (logs.length) {
-          setSourceDeployed(true);
-          setSourceDeployTx(logs[0].transactionHash);
-        }
-      },
-    });
-  } catch (e) {
-    console.log("Error setting Source Watcher:", e);
-  }
 
   // 2) Destination Intent Deploy Watcher
   try {
@@ -160,41 +143,6 @@ const DepolymentWatcher = ({
     });
   } catch (e) {
     console.log("Error setting Destination Watcher:", e);
-  }
-
-  // 3) User Transfer Watcher
-  try {
-    useWatchContractEvent({
-      address: getToken(sourceChainId, tokenIds.usdt).address,
-      chainId: sourceChainId,
-      abi: abis.erc20,
-      args: {
-        from: address?.toLowerCase() || "",
-        to: ephemeralAddress?.toLowerCase() || "",
-      },
-      eventName: "Transfer",
-      onLogs(logs) {
-        if (logs.length) {
-          console.log("User Token Transfer: ", logs);
-          logs.forEach((log) => {
-            const from = log.args.from.toLowerCase();
-            const to = log.args.to.toLowerCase();
-            const value = log.args.value;
-
-            if (
-              from === address?.toLowerCase() &&
-              to === ephemeralAddress?.toLowerCase() &&
-              value === tokenAmount
-            ) {
-              setUserTransferDone(true);
-              setUserTransferTx(logs[0].transactionHash);
-            }
-          });
-        }
-      },
-    });
-  } catch (e) {
-    console.log("Error setting User Transfer Watcher:", e);
   }
 
   // 4) Filler Transfer Watcher
@@ -225,11 +173,18 @@ const DepolymentWatcher = ({
             console.log(to);
             console.log(fillerAddress);
             console.log(beneficiary);
+            console.log(sourceChainId);
+            console.log(networkIds.nile);
 
-            if (from === fillerAddress && to === beneficiary) {
-              // Fix: set filler transfer done
-              setFillerTransferDone(true);
-              setFillerTransferTx(logs[0].transactionHash);
+            if (sourceChainId !== networkIds.nile) {
+              if (from === fillerAddress && to === beneficiary) {
+                // Fix: set filler transfer done
+                setFillerTransferDone(true);
+                setFillerTransferTx(logs[0].transactionHash);
+              }
+            } else {
+              setTranferFrom(from);
+              setTransferTo(to);
             }
           });
         }
@@ -238,6 +193,97 @@ const DepolymentWatcher = ({
   } catch (e) {
     console.log("Error setting Filler Transfer Watcher:", e);
   }
+
+  // ------------------ Contract Events: Watchers ------------------
+  if (sourceChainId != networkIds.nile) {
+    // 1) Source Intent Deploy Watcher
+    try {
+      useWatchContractEvent({
+        address: getContractAddress(sourceChainId, "intentFactory"),
+        chainId: sourceChainId,
+        abi: abis.intentFactory,
+        eventName: "IntentDeployed",
+        onLogs(logs) {
+          console.log("SourceChainIntent: ", logs);
+          if (logs.length) {
+            setSourceDeployed(true);
+            setSourceDeployTx(logs[0].transactionHash);
+          }
+        },
+      });
+    } catch (e) {
+      console.log("Error setting Source Watcher:", e);
+    }
+
+    // 3) User Transfer Watcher
+    try {
+      useWatchContractEvent({
+        address: getToken(sourceChainId, tokenIds.usdt).address,
+        chainId: sourceChainId,
+        abi: abis.erc20,
+        args: {
+          from: address?.toLowerCase() || "",
+          to: ephemeralAddress?.toLowerCase() || "",
+        },
+        eventName: "Transfer",
+        onLogs(logs) {
+          if (logs.length) {
+            console.log("User Token Transfer: ", logs);
+            logs.forEach((log) => {
+              const from = log.args.from.toLowerCase();
+              const to = log.args.to.toLowerCase();
+              const value = log.args.value;
+
+              if (
+                from === address?.toLowerCase() &&
+                to === ephemeralAddress?.toLowerCase() &&
+                value === tokenAmount
+              ) {
+                setUserTransferDone(true);
+                setUserTransferTx(logs[0].transactionHash);
+              }
+            });
+          }
+        },
+      });
+    } catch (e) {
+      console.log("Error setting User Transfer Watcher:", e);
+    }
+  }
+
+  useEffect(() => {
+    if (sourceChainId === networkIds.nile) {
+      // In the case of tron bridging
+      let factoryInterval = setInterval(async () => {
+        try {
+          const intentContract = window.tron.tronWeb.contract(
+            abis.dualChainIntent,
+            tronAddress(ephemeralAddress)
+          );
+
+          if (intentContract.deployed === true) {
+            // state
+            if (!sourceDeployed) setSourceDeployed(true);
+            //setSourceDeployTx(events[i].transaction);
+
+            const originCompleted = await intentContract
+              .originCompleted()
+              .call();
+            if (originCompleted === true) {
+              setUserTransferDone(true);
+              setFillerTransferDone(true);
+              clearInterval(factoryInterval);
+              factoryInterval = null;
+            }
+          }
+        } catch (err) {}
+      }, 1000 * 5);
+
+      return () => {
+        if (factoryInterval) clearInterval(factoryInterval);
+      };
+    }
+  }, []);
 
   return (
     <Container

@@ -1,5 +1,5 @@
 /*
-node filler_tron.js '{\""permitsignature\"":\""0x296a485208ba80de16628a85508b8e75faed954c86e9a8889f71c2ebe9c3f6743f3cc4a1b9bdc261b20900e1bab6d718ccddd3690e50ee46cf4369a96df93f8e1c\"",\""permitrawbytes\"":\""0x0000000000000000000000003091136441ebc5a2d6805605d233ec173855ec700000000000000000000000009eeca3b154b36753df09a1b140427229920d0fe50000000000000000000000000000000000000000000000056bc75e2d6310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000067b4e2ea\"",\""ordersignature\"":\""0x84ba99363fae82869ef9fc4ffcec1a523cf57e25c0052be63a3f605334b4e82c429b7b71e44b625cd3bce511a4c0eab8c7a6e55fb89e1633c51fdbee63ddc81a1b\"",\""orderrawbytes\"":\""0x0000000000000000000000009eeca3b154b36753df09a1b140427229920d0fe50000000000000000000000003091136441ebc5a2d6805605d233ec173855ec700000000000000000000000000000000000000000000000000000000067b4d3ae00000000000000000000000000000000000000000000000000000000000003e90000000000000000000000000000000000000000000000000000000067b4d4da0000000000000000000000000000000000000000000000000000000067b4e2eae7916c0abb18c8d4e936c90c4b274f18cfea48ab9203ec4dd4e48f45a126d482000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000189ee73fc64b1863e239180c36b59d62b205466e0000000000000000000000000000000000000000000000056bc75e2d631000000000000000000000000000000000000000000000000000000000000000aa36a7000000000000000000000000bf882fc99800a93494fe4844dc0002fcbaa79a7a00000000000000000000000000000000000000000000000564d702d38f5e00000000000000000000000000003091136441ebc5a2d6805605d233ec173855ec70\""}'
+node filler_tron.js '{\""permitsignature\"":\""0x42c1a581f689e26bb395d58e7a78765375d9290e26e1b82dd39583379ca6541d5c1cd5552e7b7cd640616037fa94d57ce04b93b14cba4f0a5f4cd8172ab9824f1b\"",\""permitrawbytes\"":\""0x0000000000000000000000000528197248349620377611488b3f306ab5e2e1b900000000000000000000000029a533690713d5439bb5a79ec7798fa01762f40a0000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000067c771ab\"",\""ordersignature\"":\""0x2fe2595305a77e35d6902155a746b5cebd13f03a0e7408d490dfdff9088510370467778db477e569c4d18d4395fa0abac42e8ba141f5e261944a9c82c296c5ca1b\"",\""orderrawbytes\"":\""0x00000000000000000000000029a533690713d5439bb5a79ec7798fa01762f40a0000000000000000000000000528197248349620377611488b3f306ab5e2e1b90000000000000000000000000000000000000000000000000000000067c7626f00000000000000000000000000000000000000000000000000000000cd8690dc0000000000000000000000000000000000000000000000000000000067c7639b0000000000000000000000000000000000000000000000000000000067c771abe7916c0abb18c8d4e936c90c4b274f18cfea48ab9203ec4dd4e48f45a126d482000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000189ee73fc64b1863e239180c36b59d62b205466e0000000000000000000000000000000000000000000000008ac7230489e800000000000000000000000000000000000000000000000000000000000000aa36a7000000000000000000000000bf882fc99800a93494fe4844dc0002fcbaa79a7a0000000000000000000000000000000000000000000000008a1580485b2300000000000000000000000000000528197248349620377611488b3f306ab5e2e1b9\""}'
 */
 
 require("dotenv").config();
@@ -31,14 +31,17 @@ const nileChainId = 1001;
 
 // define intent factory address on both network (in this case, sepolia and opstack)
 const ADDRESS_INTENT_FACTORY = {
-  opstack: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
-  sepolia: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
-  ink: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
+  opstack: "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972",
+  sepolia: "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972",
+  ink: "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972",
   nile: "TDkT1GLv9hcKSDDr4o3UV1fCSidDB2DXQb",
 };
 // intent factory addresses are same on both network
 const ADDRESS_INTENT_FACTORY_GLOBAL =
-  "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68";
+  "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972";
+
+const waitSeconds = (sec = 5) =>
+  new Promise((resolve) => setTimeout(resolve, sec * 1000));
 
 // filler's wallet private key
 const fillerPrivateKey_tron = process.env.FILLER_PRIVATE_KEY_TRON;
@@ -68,8 +71,7 @@ let intentFactoryDest;
 
 const tronWeb = new TronWeb({
   fullHost: "https://nile.trongrid.io",
-  privateKey:
-    "be18f61befed3e1bde985831d88bceba3c5830e95487dbb26d8f0abb2b7adb0b",
+  privateKey: fillerPrivateKey_tron,
 });
 
 // function to validate signature
@@ -240,14 +242,19 @@ const validateSignature = async (inputData) => {
     nonce: permitData[3],
     deadline: permitData[4],
   };
-  const recoverdAddressFromPermit = tronWeb.trx.verifyTypedData(
-    permitDomain,
-    permitTypes,
-    permitValues,
-    inputData.permitsignature
-  );
 
-  console.log("recoverdAddressFromPermit: ", recoverdAddressFromPermit);
+  // console.log(permitDomain);
+  // console.log(permitTypes);
+  // console.log(permitValues);
+
+  // const recoverdAddressFromPermit = tronWeb.trx.verifyTypedData(
+  //   permitDomain,
+  //   permitTypes,
+  //   permitValues,
+  //   inputData.permitsignature
+  // );
+
+  // console.log("recoverdAddressFromPermit: ", recoverdAddressFromPermit);
   // split permit signature
   const sig = utils.ethersUtils.splitSignature(inputData.permitsignature);
   sig_v = sig.v;
@@ -259,7 +266,7 @@ const validateSignature = async (inputData) => {
 
   //console.log(" - recovered address from order: " + recoveredAddressFromOrder);
   console.log(" - calculated address from order raw bytes: " + orderData[1]);
-  console.log(" - recovered address from permit: " + recoverdAddressFromPermit);
+  //console.log(" - recovered address from permit: " + recoverdAddressFromPermit);
   console.log(" - calculated address from permit raw bytes: " + permitData[0]);
 
   console.log("orderData: ", orderData);
@@ -304,6 +311,8 @@ const dployEphemeralContracts = async () => {
   console.log(" - deploy ephermeral contract on dest chain", txRecipt.hash);
 };
 
+let computedAddressEvm;
+
 // function to subit permit by filler (approve & transfer user token to source chain [filler pays gas])
 const submitPermit = async () => {
   let beforeOrderData = [...orderData];
@@ -315,7 +324,14 @@ const submitPermit = async () => {
       ethers.utils.id("SALT_0x1234567890ABCDEF")
     )
     .call();
-  const computedAddressEvm = orderData[0];
+
+  computedAddressEvm = await intentFactoryDest.getIntentAddress(
+    beforeOrderData,
+    ethers.utils.id("SALT_0x1234567890ABCDEF")
+  );
+
+  console.log("computedAddressEvm: ", computedAddressEvm);
+
   intentSource = tronWeb.contract(dualChainIntentAbi, computedAddressTvm);
   intentDest = new ethers.Contract(
     computedAddressEvm,
@@ -356,6 +372,8 @@ const submitPermit = async () => {
     .submitPermit(orderId, sig_v, sig_r, sig_s)
     .send();
 
+  console.log(txRecipt);
+
   console.log(
     `Ephermeral contract token balance: ${formatEther(bridgeData[2])} MOCK`
   );
@@ -381,6 +399,7 @@ const fillOrder = async () => {
 
   let contractOrderData = [...orderData];
   contractOrderData[7] = bridgeEncoded;
+  contractOrderData[0] = computedAddressEvm;
 
   const orderEncoded = ethers.utils.defaultAbiCoder.encode(
     [
@@ -388,6 +407,9 @@ const fillOrder = async () => {
     ],
     [contractOrderData]
   );
+
+  console.log("bridgeDataAfterDeploy: ", bridgeDataAfterDeploy);
+  console.log("contractOrderData: ", contractOrderData);
 
   const orderId = ethers.utils.keccak256(orderEncoded);
 
@@ -401,11 +423,11 @@ const fillOrder = async () => {
   // approve destination ephemeral contract to spend filler's dest token
   txRecipt = await destTokenContract
     .connect(fillerDest)
-    .approve(orderData[0], bridgeData[2]);
+    .approve(computedAddressEvm, bridgeData[2]);
   console.log("approve", txRecipt.hash);
   await destProvider.waitForTransaction(txRecipt.hash);
 
-  console.log(orderId);
+  console.log("orderId: ", orderId);
 
   // call fill function on destinationn chain (send dest token to user)
   txRecipt = await intentDest.connect(fillerDest).fill(orderId, "0x", "0x");
@@ -429,6 +451,8 @@ const finalizeOrder = async () => {
     .send();
 
   console.log(tx);
+
+  await waitSeconds(30);
 
   // expect originCompleted state to be true
   const originCompleted = await intentSource.originCompleted().call();

@@ -39,7 +39,7 @@ const opstackrollup = {
 
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
-  projectId: "3f2f13a6f0cd850fc7f1d9a7ae9faaf4",
+  projectId: "3cca155cce0954b0e72ea4f0f5e86aa0",
   chains: [sepolia, inkSepolia, opstackrollup],
   ssr: true, // If your dApp uses server side rendering (SSR)
 });
@@ -53,17 +53,19 @@ const Providers = ({ children }) => {
   }, []);
 
   return (
-    <WalletProvider
-      autoConnect={true}
-      disableAutoConnectOnLoad={true}
-      adapters={adapters}
-    >
-      <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider>{children}</RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
-    </WalletProvider>
+    <>
+      <WalletProvider
+        autoConnect={true}
+        disableAutoConnectOnLoad={true}
+        adapters={adapters}
+      >
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            <RainbowKitProvider>{children}</RainbowKitProvider>
+          </QueryClientProvider>
+        </WagmiProvider>
+      </WalletProvider>
+    </>
   );
 };
 

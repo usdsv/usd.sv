@@ -75,7 +75,7 @@ const useOrderData = (manualRequest) => {
     functionName: "balanceOf",
     args: [evmAddress],
     query: {
-      enabled: !!sourceChain && sourceChain.id !== 1001,
+      enabled: !!sourceChain && sourceChain.id !== 3448148188,
     },
   });
 

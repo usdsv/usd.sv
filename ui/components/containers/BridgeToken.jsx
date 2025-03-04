@@ -43,7 +43,7 @@ const BridgeToken = ({ handleSign }) => {
     if (chains) {
       if (chains.length < 4) {
         chains.push({
-          id: 1001,
+          id: 3448148188,
           name: "Nile",
         });
       }
