@@ -1,5 +1,5 @@
 /*
-node filler.js '{\""permitsignature\"":\""0xc043e54a0db44c19181d1ddbf30c926fdcdd93e602b11a4116adb47d431066ac50b1a7472c7d2bbc4fde89f6560dfe5cd8e7e0822d34e9651092f4e572be7be41b\"",\""permitrawbytes\"":\""0x0000000000000000000000000528197248349620377611488b3f306ab5e2e1b9000000000000000000000000407775152f8334562b99744dbf4d7378bda7854e0000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000067c8b7c7\"",\""ordersignature\"":\""0x1191474e97408f9e99765823e432732de16fbf544f48a4af33524c5e329b547158bc897093acb58924cfcee050921a0cc9d4ec3ea62da22dda8d08c2735fd9501b\"",\""orderrawbytes\"":\""0x000000000000000000000000407775152f8334562b99744dbf4d7378bda7854e0000000000000000000000000528197248349620377611488b3f306ab5e2e1b90000000000000000000000000000000000000000000000000000000067c8a88b00000000000000000000000000000000000000000000000000000000000001650000000000000000000000000000000000000000000000000000000067c8a9b70000000000000000000000000000000000000000000000000000000067c8b7c7e7916c0abb18c8d4e936c90c4b274f18cfea48ab9203ec4dd4e48f45a126d482000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bf882fc99800a93494fe4844dc0002fcbaa79a7a0000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000000ba5ed000000000000000000000000bf882fc99800a93494fe4844dc0002fcbaa79a7a0000000000000000000000000000000000000000000000008a1580485b2300000000000000000000000000000528197248349620377611488b3f306ab5e2e1b9\""}'
+node filler.js '{\""permitsignature\"":\""0xff3ceb7bc063d79c17dedd078c16442d2a14454234a7bf796d60391bdf542b2807be6bbc444462d51765a260fe0cb3c75465f4fa58359d1062532316b9e21ab11c\"",\""permitrawbytes\"":\""0x000000000000000000000000e8b890e5e0e7f62e42aafa2477054e8bfcb48004000000000000000000000000f43a23374edb9092125bd2e8664d48cb5ce40a9a0000000000000000000000000000000000000000000000004563918244f40000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000679d4d85\"",\""ordersignature\"":\""0x87c8a4820c5559d52f6374a023e7450d31caf78d9ae79139481f7b1f996d7afc1e3a8131c0a4bf398e16c95a27e17e5a36f2c2d69b9136b7ac72a684847dd02d1c\"",\""orderrawbytes\"":\""0x000000000000000000000000f43a23374edb9092125bd2e8664d48cb5ce40a9a000000000000000000000000e8b890e5e0e7f62e42aafa2477054e8bfcb4800400000000000000000000000000000000000000000000000000000000679d3e490000000000000000000000000000000000000000000000000000000000aa36a700000000000000000000000000000000000000000000000000000000679d3f7500000000000000000000000000000000000000000000000000000000679d4d85e7916c0abb18c8d4e936c90c4b274f18cfea48ab9203ec4dd4e48f45a126d482000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bf882fc99800a93494fe4844dc0002fcbaa79a7a0000000000000000000000000000000000000000000000004563918244f400000000000000000000000000000000000000000000000000000000000000000165000000000000000000000000bf882fc99800a93494fe4844dc0002fcbaa79a7a000000000000000000000000e8b890e5e0e7f62e42aafa2477054e8bfcb48004\""}'
 */
 
 require("dotenv").config();
@@ -27,9 +27,9 @@ const inkChainId = 763373;
 
 // define intent factory address on both network (in this case, sepolia and opstack)
 const ADDRESS_INTENT_FACTORY = {
-  opstack: "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972",
-  sepolia: "0xED98C7acC5d974D2bDcA426bf0B9dE8ceE2E3972",
-  ink: "0xF6e88089371f875620Ad4D287E375E40DFDF7b89",
+  opstack: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
+  sepolia: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
+  ink: "0x9065Bd9D33770B38cDAf0761Bc626cf5fA45ae68",
 };
 // intent factory addresses are same on both network
 const ADDRESS_INTENT_FACTORY_GLOBAL =
@@ -156,28 +156,14 @@ const validateSignature = async (inputData) => {
   fillerSource = new Wallet(fillerPrivateKey, sourceProvider); // receive user's token
   fillerDest = new Wallet(fillerPrivateKey, destProvider); // send dest token to user
 
-  const factoryAddressSource =
-    parseInt(orderData[3]) === sepoliaChainId
-      ? ADDRESS_INTENT_FACTORY.sepolia
-      : parseInt(orderData[3]) === inkChainId
-      ? ADDRESS_INTENT_FACTORY.ink
-      : ADDRESS_INTENT_FACTORY.opstack;
-
-  const factoryAddressDest =
-    parseInt(bridgeData[3]) === sepoliaChainId
-      ? ADDRESS_INTENT_FACTORY.sepolia
-      : parseInt(bridgeData[3]) === inkChainId
-      ? ADDRESS_INTENT_FACTORY.ink
-      : ADDRESS_INTENT_FACTORY.opstack;
-
   // get depolyed intent factory and erc-20 token address on both chains
   intentFactory = new ethers.Contract(
-    factoryAddressSource,
+    ADDRESS_INTENT_FACTORY_GLOBAL,
     intentFactoryAbi,
     sourceProvider
   );
   intentFactoryDest = new ethers.Contract(
-    factoryAddressDest,
+    ADDRESS_INTENT_FACTORY_GLOBAL,
     intentFactoryAbi,
     destProvider
   );
@@ -255,10 +241,10 @@ const validateSignature = async (inputData) => {
     orderData[1] === permitData[0]
   );
 };
-let beforeOrderData;
+
 // function to deploy ephemeral contract on both chains
 const dployEphemeralContracts = async () => {
-  beforeOrderData = [...orderData];
+  let beforeOrderData = [...orderData];
   beforeOrderData[0] = "0x0000000000000000000000000000000000000000";
   // deploy to source
   txRecipt = await intentFactory
@@ -275,8 +261,6 @@ const dployEphemeralContracts = async () => {
   console.log(" - deploy ephermeral contract on dest chain", txRecipt.hash);
 };
 
-let computedAddressDest;
-
 // function to subit permit by filler (approve & transfer user token to source chain [filler pays gas])
 const submitPermit = async () => {
   // get depolyed ephemeral contract from both chains
@@ -286,16 +270,8 @@ const submitPermit = async () => {
     dualChainIntentAbi,
     fillerSource
   );
-
-  computedAddressDest = await intentFactoryDest.getIntentAddress(
-    beforeOrderData,
-    ethers.utils.id("SALT_0x1234567890ABCDEF")
-  );
-
-  console.log("computedAddressDest: ", computedAddressDest);
-
   intentDest = new ethers.Contract(
-    computedAddressDest,
+    computedAddress,
     dualChainIntentAbi,
     fillerDest
   );
@@ -359,7 +335,6 @@ const fillOrder = async () => {
 
   let contractOrderData = [...orderData];
   contractOrderData[7] = bridgeEncoded;
-  contractOrderData[0] = computedAddressDest;
 
   const orderEncoded = ethers.utils.defaultAbiCoder.encode(
     [
@@ -380,7 +355,7 @@ const fillOrder = async () => {
   // approve destination ephemeral contract to spend filler's dest token
   txRecipt = await destTokenContract
     .connect(fillerDest)
-    .approve(computedAddressDest, bridgeData[2]);
+    .approve(orderData[0], bridgeData[2]);
   console.log("approve", txRecipt.hash);
   await destProvider.waitForTransaction(txRecipt.hash);
 
@@ -437,7 +412,9 @@ const finalizeOrder = async () => {
     "First, filler validates order & permit data from user posted JSONBLOB"
   );
   const isSignatureValid = await validateSignature(input);
-
+  if (!isSignatureValid) {
+    return;
+  }
   console.log(
     "------------------------------ validation success ------------------------------"
   );

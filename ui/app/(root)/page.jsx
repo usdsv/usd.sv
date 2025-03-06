@@ -9,8 +9,6 @@ import useSignPermit from "@/hooks/useSignPermit";
 import DeploymentWatcher from "@/components/containers/DeploymentWatcher";
 import { useSubmitOrder } from "@/hooks/useSubmitOrder";
 import { BridgeDataHelper } from "@/utils/typeHelper";
-import { abis } from "@/abi";
-import { getContractAddress } from "@/config/networks";
 
 const SignerPage = () => {
   // Require variables for submitSignatures (order data, order signature, permit data, permit signature)
@@ -40,18 +38,11 @@ const SignerPage = () => {
       order.orderData
     ).amount;
 
-    const intentFactoryTron = window.tron.tronWeb.contract(
-      abis.intentFactory_Tron,
-      getContractAddress(3448148188, "intentFactory")
-    );
-
     setObserveData({
       sourceChainId,
       ephemeralAddress,
       destChainId,
       tokenAmount,
-      orderData: order,
-      intentFactoryTron,
     });
 
     setUserSignProcess(1); // user sign process (request to sign order)
