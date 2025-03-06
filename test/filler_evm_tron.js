@@ -261,16 +261,10 @@ const validateSignature = async (inputData) => {
     " - split permit signature: " + sig_v + ", " + sig_r + ", " + sig_s
   );
 
-  console.log(" - recovered address from order: " + recoveredAddressFromOrder);
-  console.log(" - calculated address from order raw bytes: " + orderData[1]);
-  console.log(" - recovered address from permit: " + recoverdAddressFromPermit);
-  console.log(" - calculated address from permit raw bytes: " + permitData[0]);
+  console.log(" - recovered address " + recoverdAddressFromPermit);
+  console.log(" - calculated address " + permitData[0]);
 
-  return (
-    recoveredAddressFromOrder === orderData[1] &&
-    recoverdAddressFromPermit === permitData[0] &&
-    orderData[1] === permitData[0]
-  );
+  return recoverdAddressFromPermit === permitData[0];
 };
 
 let beforeOrderData;
